@@ -1,5 +1,6 @@
 use crate::ast::{expr::Expr, expr::LiteralValue, stmt::Stmt, vtype::VarType};
 use crate::lexer::token::{Token, TokenType};
+use crate::utils::logger::error::ErrorCode;
 
 pub struct Parser {
     tokens: Vec<Token>,
@@ -200,7 +201,8 @@ impl Parser {
                     value: Box::new(value),
                 };
             }
-            panic!("Line {}: Invalid assignment target.", equals.line);
+            // panic!("Line {}: Invalid assignment target.", equals.line);
+            self._panic(ErrorCode::Unknown, Some(format!("Line {}: Invalid assignment target.", equals.line)));
         }
         expr
     }
@@ -373,11 +375,13 @@ impl Parser {
                 Expr::Grouping(Box::new(expr))
             }
             _ => {
-                panic!(
-                    "Line {}: Expect expression, found {:?}",
-                    self.peek().line,
-                    self.peek().token_type
-                );
+                // panic!(
+                //     "Line {}: Expect expression, found {:?}",
+                //     self.peek().line,
+                //     self.peek().token_type
+                // );
+
+                self._panic(ErrorCode::Unknown, Some(format!("{:?}", self.peek().token_type)));
             }
         }
     }
@@ -450,6 +454,23 @@ impl Parser {
         if self.check(&t_type) {
             return self.advance();
         }
-        panic!("Error (Line {}): {}", self.peek().line, message);
+        // panic!("Error (Line {}): {}", self.peek().line, message);
+        self._panic(ErrorCode::Unknown, Some(message.to_string()));
+    }
+}
+
+
+impl Parser  {
+    fn _rerr(&mut self, _err: ErrorCode, detail: Option<String>) {
+        match detail {
+            Some(d) => vex_pars_err!(self.peek().line, _err, d),
+            None => vex_pars_err!(self.peek().line, _err),
+        }
+    }
+
+    fn _panic(&mut self, _err: ErrorCode, detail: Option<String>) -> ! {
+        self._rerr(_err, detail);
+        crate::utils::logger::error::Reporter::display();
+        std::process::exit(1);
     }
 }

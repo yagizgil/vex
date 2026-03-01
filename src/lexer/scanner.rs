@@ -1,4 +1,5 @@
 use crate::lexer::token::{Token, TokenType};
+use crate::utils::logger::error::ErrorCode;
 
 pub struct Scanner {
     source: Vec<char>,
@@ -38,7 +39,7 @@ impl Scanner {
 
         self.tokens.clone()
     }
-    
+
     #[inline]
     fn scan_token(&mut self) {
         if self.is_at_line_start {
@@ -114,7 +115,7 @@ impl Scanner {
                 } else if c.is_alphabetic() || c == '_' {
                     self.identifier();
                 } else {
-                    eprintln!("Line {}: Unexpected character '{}'", self.line, c);
+                    self._rerr(ErrorCode::UnexpectedChar,Some(c.to_string()));
                 }
             }
         }
@@ -211,7 +212,7 @@ impl Scanner {
         }
 
         if self.is_at_end() {
-            eprintln!("Line {}: Unterminated string", self.line);
+            self._rerr(ErrorCode::UnterminatedString, None);
             return;
         }
 
@@ -253,7 +254,7 @@ impl Scanner {
             }
 
             if spaces != *self.indent_stack.last().unwrap() {
-                eprintln!("Line {}: Indentation error!", self.line);
+                self._rerr(ErrorCode::Indentation, None);
             }
         }
 
@@ -303,5 +304,14 @@ impl Scanner {
             lexeme: text,
             line: self.line,
         });
+    }
+}
+
+impl Scanner {
+    fn _rerr(&mut self, _err: ErrorCode, detail: Option<String>) {
+        match detail {
+            Some(d) => vex_lex_err!(self.line, _err, d),
+            None => vex_lex_err!(self.line, _err),
+        }
     }
 }

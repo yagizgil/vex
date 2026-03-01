@@ -5,6 +5,8 @@ use crate::engine::Interpreter;
 use crate::lexer::Scanner;
 use crate::parser::Parser;
 
+use crate::utils::logger::error::Reporter;
+
 pub fn lexpars(args: &[String]) {
     let show_lex = args.iter().any(|a| a == "-lex");
     let show_pars = args.iter().any(|a| a == "-pars");
