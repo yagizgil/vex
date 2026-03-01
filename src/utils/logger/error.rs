@@ -28,7 +28,7 @@ pub enum VexError {
     General(usize, ErrorCode, Option<String>),
     Lexer(usize, ErrorCode, Option<String>),
     Parser(usize, ErrorCode, Option<String>),
-    Engine(usize, ErrorCode, Option<String>),
+    Interpreter(usize, ErrorCode, Option<String>),
 }
 
 pub struct Reporter {
@@ -51,7 +51,7 @@ impl Reporter {
                     VexError::General(l, c, d) => ("General", "\x1b[31m", l, c, d, "E"),
                     VexError::Lexer(l, c, d) => ("Lexical", "\x1b[31m", l, c, d, "L"),
                     VexError::Parser(l, c, d) => ("Syntax", "\x1b[33m", l, c, d, "P"),
-                    VexError::Engine(l, c, d) => ("Engine", "\x1b[35m", l, c, d, "R"),
+                    VexError::Interpreter(l, c, d) => ("Interpreter", "\x1b[35m", l, c, d, "R"),
                 };
 
                 let detail_str = detail.as_ref()

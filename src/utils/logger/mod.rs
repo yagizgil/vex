@@ -41,15 +41,15 @@ macro_rules! vex_pars_err {
 }
 
 #[macro_export]
-macro_rules! vex_eng_err {
+macro_rules! vex_int_err {
     ($line:expr, $code:expr, $detail:expr) => {
         $crate::utils::logger::error::Reporter::add(
-            $crate::utils::logger::error::VexError::Engine($line, $code, Some($detail.to_string()))
+            $crate::utils::logger::error::VexError::Interpreter($line, $code, Some($detail.to_string()))
         )
     };
     ($line:expr, $code:expr) => {
         $crate::utils::logger::error::Reporter::add(
-            $crate::utils::logger::error::VexError::Engine($line, $code, None)
+            $crate::utils::logger::error::VexError::Interpreter($line, $code, None)
         )
     };
 }
