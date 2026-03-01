@@ -202,7 +202,7 @@ impl Parser {
                 };
             }
             // panic!("Line {}: Invalid assignment target.", equals.line);
-            self._panic(ErrorCode::Unknown, Some(format!("Line {}: Invalid assignment target.", equals.line)));
+            vex_pars_panic!(self.peek().line, ErrorCode::Unknown, Some(format!("Line {}: Invalid assignment target.", equals.line)));
         }
         expr
     }
@@ -381,7 +381,7 @@ impl Parser {
                 //     self.peek().token_type
                 // );
 
-                self._panic(ErrorCode::Unknown, Some(format!("{:?}", self.peek().token_type)));
+                vex_pars_panic!(self.peek().line, ErrorCode::Unknown, Some(format!("{:?}", self.peek().token_type)));
             }
         }
     }
@@ -455,22 +455,6 @@ impl Parser {
             return self.advance();
         }
         // panic!("Error (Line {}): {}", self.peek().line, message);
-        self._panic(ErrorCode::Unknown, Some(message.to_string()));
-    }
-}
-
-
-impl Parser  {
-    fn _rerr(&mut self, _err: ErrorCode, detail: Option<String>) {
-        match detail {
-            Some(d) => vex_pars_err!(self.peek().line, _err, d),
-            None => vex_pars_err!(self.peek().line, _err),
-        }
-    }
-
-    fn _panic(&mut self, _err: ErrorCode, detail: Option<String>) -> ! {
-        self._rerr(_err, detail);
-        crate::utils::logger::error::Reporter::display();
-        std::process::exit(1);
+        vex_pars_panic!(self.peek().line, ErrorCode::Unknown, Some(message.to_string()));
     }
 }

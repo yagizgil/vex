@@ -151,7 +151,11 @@ impl Interpreter {
             }
             (LiteralValue::Number(n1), TokenType::Slash, LiteralValue::Number(n2)) => {
                 if n2 == 0.0 {
-                    self._panic(ErrorCode::MathDivideByZero, None);
+                    vex_int_panic!(
+                        self.current.as_ref().map(|s| s.line()).unwrap_or(0),
+                        ErrorCode::MathDivideByZero,
+                        None
+                    );
                 }
                 LiteralValue::Number(n1 / n2)
             }
@@ -178,31 +182,16 @@ impl Interpreter {
         match val {
             LiteralValue::Number(n) => LiteralValue::Number(-n),
             _ => {
-                self._rerr(
+                vex_int_err!(
+                    self.current.as_ref().map(|s| s.line()).unwrap_or(0),
                     ErrorCode::Unknown,
                     Some(format!(
                         "Error: '-' operator only works with numbers, incoming value: {:?}",
                         val
-                    )),
+                    ))
                 );
                 LiteralValue::Null
             }
         }
-    }
-}
-
-impl Interpreter {
-    fn _rerr(&mut self, _err: ErrorCode, detail: Option<String>) {
-        let ln = self.current.as_ref().map(|s| s.line()).unwrap_or(0);
-        match detail {
-            Some(d) => vex_pars_err!(ln, _err, d),
-            None => vex_pars_err!(ln, _err),
-        }
-    }
-
-    fn _panic(&mut self, _err: ErrorCode, detail: Option<String>) -> ! {
-        self._rerr(_err, detail);
-        crate::utils::logger::error::Reporter::display();
-        std::process::exit(1);
     }
 }
