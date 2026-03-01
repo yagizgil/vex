@@ -1,0 +1,47 @@
+{
+    "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+    "name": "Vex",
+    "scopeName": "source.vx",
+    "patterns": [
+        { "include": "#keywords" },
+        { "include": "#strings" },
+        { "include": "#numbers" },
+        { "include": "#comments" }
+    ],
+    "repository": {
+        "keywords": {
+            "patterns": [{
+                "name": "keyword.control.vex",
+                "match": "\\b(if|else|elif|while|for|return|break|continue|var|fn|print)\\b"
+            },
+            {
+                "name": "storage.type.vex",
+                "match": "\\b(int|str|float|bool|list|dict)\\b"
+            },
+            {
+                "name": "constant.language.vex",
+                "match": "\\b(true|false|null)\\b"
+            }]
+        },
+        "strings": {
+            "name": "string.quoted.double.vex",
+            "begin": "\"",
+            "end": "\"",
+            "patterns": [
+                { "name": "constant.character.escape.vex", "match": "\\\\." }
+            ]
+        },
+        "numbers": {
+            "patterns": [{
+                "name": "constant.numeric.vex",
+                "match": "\\b\\d+(\\.\\d+)?\\b"
+            }]
+        },
+        "comments": {
+            "patterns": [{
+                "name": "comment.line.number-sign.vex",
+                "match": "#.*$"
+            }]
+        }
+    }
+}

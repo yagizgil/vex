@@ -1,0 +1,55 @@
+var limit 10000
+var num 2
+var prime_num_nums 0
+
+while num <= limit:
+    var j 2
+    var prime true
+    
+    while j * j <= num:
+        if (num / j) * j == num: 
+            prime false
+            j limit 
+        else:
+            j j + 1
+            
+    if prime == true:
+        print "Prime:" num
+        prime_num_nums prime_num_nums + 1
+    
+    num num + 1
+
+print "Total primes found:" prime_num_nums
+
+---
+
+print "--- Fibonacci Series and Dynamic Coverage Testing ---"
+
+var n1 0
+var n2 1
+var counter 0
+var goal 10
+
+while counter < goal:
+    var temp n1
+    n1 n2
+    n2 temp + n2
+    
+    if n1 > 20:
+        var message "Big Term:"
+        print message n1
+    else:
+        var message "Minor Term:"
+        print message n1
+    
+    counter counter + 1
+
+var x 10
+if x > 5:
+    var x 100
+    var y (x * 2) / (5 + 5)
+    print "x within the block (must be 100):" x
+    print "Calculated y (must be 20):" y
+
+print "Off-block x (must be 10):" x
+print "Program completed successfully."
