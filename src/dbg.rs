@@ -59,6 +59,8 @@ pub fn lexpars(args: &[String]) {
         }
     }
 
+    Reporter::display();
+
     if !show_lex && !show_pars && !show_eng {
         println!("Hint: Use -lex, -pars, or -eng flags to see debug information.");
     }

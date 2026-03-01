@@ -8,6 +8,7 @@ pub enum ErrorCode {
     Indentation = 102,
     ExprExpected = 200,
     VarUndefined = 300,
+    MathDivideByZero = 400
 }
 
 impl ErrorCode {
@@ -19,7 +20,7 @@ impl ErrorCode {
             ErrorCode::Indentation => "Indentation error.",
             ErrorCode::ExprExpected => "Expression expected.",
             ErrorCode::VarUndefined => "Undefined variable reference.",
-            
+            ErrorCode::MathDivideByZero => "Divide by zero."
         }
     }
 }

@@ -44,3 +44,18 @@ pub enum Stmt {
     Expression(Expr),
     Block(Vec<Stmt>),
 }
+
+impl Stmt {
+    pub fn line(&self) -> usize {
+        match self {
+            Stmt::Var { name, .. } => name.line,
+            Stmt::Fn { name, .. } => name.line,
+            Stmt::For { item, .. } => item.line,
+            Stmt::Return { keyword, .. } => keyword.line,
+            Stmt::While { condition, .. } => 0,
+            Stmt::Expression(_expr) => 0,
+            Stmt::Block(stmts) => stmts.first().map(|s| s.line()).unwrap_or(0),
+            _ => 0,
+        }
+    }
+}
