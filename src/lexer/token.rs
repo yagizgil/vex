@@ -1,7 +1,7 @@
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "inspector", derive(serde::Serialize))]
-#[cfg_attr(feature = "inspector", serde(tag = "type", content = "value"))]
+// #[cfg_attr(feature = "inspector", serde(tag = "type", content = "value"))]
 pub enum TokenType {
     Dot, Minus, Colon, Comma, Plus, Star, Slash, Equal, Bang, SemiColon,
     LeftParen, RightParen,   // ( )

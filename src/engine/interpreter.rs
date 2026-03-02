@@ -23,6 +23,9 @@ impl Interpreter {
         for statement in statements {
             self.current = Some(statement.clone());
             self.execute(statement);
+            // ------ Inspector Record ------
+            //inspect!("Interpreter", &vec![], &vec![statement.clone()], "ok.");
+            // ------ Inspector Record ------
         }
     }
 

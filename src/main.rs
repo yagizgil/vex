@@ -10,13 +10,12 @@ mod parser;
 
 use std::env;
 use std::fs;
+use std::path::Path;
 use std::process;
 use std::time;
 use std::time::Instant;
-use std::path::Path;
 
-use crate::lexer::Scanner;
-use crate::parser::Parser;
+
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -46,9 +45,14 @@ fn main() {
 
         #[cfg(feature = "inspector")]
         "inspect" => {
+            use crate::engine::Interpreter;
+            use crate::engine::Resolver;
+            use crate::lexer::Scanner;
+            use crate::parser::Parser;
+
             raise_if_no_file(&args, "inspect");
             crate::utils::logger::REPORT_ENABLED.store(true, std::sync::atomic::Ordering::Relaxed);
-            
+
             let file_path = &args[2];
             let source = read_file(file_path);
 
@@ -56,7 +60,13 @@ fn main() {
             let tokens = scanner.scan_tokens();
 
             let mut parser = Parser::new(tokens);
-            let _ast = parser.parse();
+            let mut _ast = parser.parse();
+
+            let mut resolver = Resolver::new();
+            resolver.resolve_statements(&mut _ast);
+
+            let mut interpreter = Interpreter::new();
+            interpreter.interpret(&_ast);
 
             let file_name = Path::new(file_path)
                 .file_name()

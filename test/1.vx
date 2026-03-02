@@ -1,4 +1,4 @@
-var limit 10000
+var limit 100
 var num 2
 var prime_num_nums 0
 
