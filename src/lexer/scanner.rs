@@ -314,18 +314,19 @@ impl Scanner {
             lexeme: text.clone(),
             line: self.line,
         };
-        self.tokens.push(new_token);
 
         // ------ Inspector Record ------
         inspect!(
             "Lexer",
-            &self.tokens,
+            &vec![new_token.clone()],
             &vec![],
             "Token: {} ({:?})",
             text,
             t_type
         );
         // ------ Inspector Record ------
+        
+        self.tokens.push(new_token);
     }
 }
 

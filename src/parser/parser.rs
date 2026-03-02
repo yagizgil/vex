@@ -5,11 +5,18 @@ use crate::utils::logger::error::ErrorCode;
 pub struct Parser {
     tokens: Vec<Token>,
     current: usize,
+    #[cfg(feature = "inspector")]
+    _r: usize,
 }
 
 impl Parser {
     pub fn new(tokens: Vec<Token>) -> Self {
-        Self { tokens, current: 0 }
+        Self {
+            tokens,
+            current: 0,
+            #[cfg(feature = "inspector")]
+            _r: 0,
+        }
     }
 
     pub fn parse(&mut self) -> Vec<Stmt> {
@@ -18,14 +25,30 @@ impl Parser {
             if self.match_token(&[TokenType::Newline]) {
                 continue;
             }
+
+            #[cfg(feature = "inspector")]
+            {
+                self._r = self.current;
+            }
+
             let stmt = self.declaration();
-            statements.push(stmt);
 
             // ------ Inspector Record ------
-            inspect!("Parser", &self.tokens, &statements, "ok.");
+            inspect!("Parser", &self.token_range(), &vec![stmt.clone()], "ok.");
             // ------ Inspector Record ------
+
+            statements.push(stmt);
         }
         statements
+    }
+
+    #[cfg(feature = "inspector")]
+    fn token_range(&mut self) -> Vec<Token> {
+        if self._r < self.current {
+            self.tokens[self._r..self.current].to_vec()
+        } else {
+            Vec::new()
+        }
     }
 
     fn declaration(&mut self) -> Stmt {
@@ -36,9 +59,10 @@ impl Parser {
         // ------ Inspector Record ------
         inspect!(
             "Parser",
-            &self.tokens,
+            &vec![self.peek().clone()],
             &vec![],
-            "({:?})", peek_type
+            "({:?})",
+            peek_type
         );
         // ------ Inspector Record ------
 
@@ -230,6 +254,12 @@ impl Parser {
                             value: Box::new(value),
                             index: None,
                         });
+                    } else {
+                        vex_pars_panic!(
+                            self.peek().line,
+                            ErrorCode::Unknown,
+                            Some("statement".to_string())
+                        );
                     }
                 }
             }

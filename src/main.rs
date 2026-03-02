@@ -47,6 +47,8 @@ fn main() {
         #[cfg(feature = "inspector")]
         "inspect" => {
             raise_if_no_file(&args, "inspect");
+            crate::utils::logger::REPORT_ENABLED.store(true, std::sync::atomic::Ordering::Relaxed);
+            
             let file_path = &args[2];
             let source = read_file(file_path);
 
