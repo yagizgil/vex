@@ -90,6 +90,8 @@ impl Resolver {
             }
 
             Stmt::Break | Stmt::Continue => {}
+
+            _ =>{}
         }
     }
 

@@ -55,8 +55,65 @@ impl Parser {
                 self.advance();
                 self.while_statement()
             }
+            TokenType::Import => {
+                self.advance();
+                self.import_declaration()
+            }
             _ => self.statement(),
         }
+    }
+
+    fn import_declaration(&mut self) -> Stmt {
+        let mut _imports = Vec::new();
+
+        fn consume_path(parser: &mut Parser) -> String {
+            let mut path = parser
+                .consume(TokenType::Identifier, "Expect identifier for import path.")
+                .lexeme
+                .clone();
+            while parser.match_token(&[TokenType::Dot]) {
+                let part = parser.consume(TokenType::Identifier, "Expect identifier after '.'.");
+                path.push('.');
+                path.push_str(&part.lexeme);
+            }
+            path
+        }
+
+        _imports.push(consume_path(self));
+
+        loop {
+            if self.match_token(&[TokenType::Comma]) {
+                while self.match_token(&[TokenType::Newline]) {}
+                _imports.push(consume_path(self));
+                continue;
+            }
+
+            if self.match_token(&[TokenType::Newline]) {
+                if self.check(&TokenType::Indent) {
+                    self.advance();
+
+                    while !self.check(&TokenType::Dedent) && !self.is_at_end() {
+                        while self.match_token(&[TokenType::Newline]) {}
+                        if self.check(&TokenType::Identifier) {
+                            _imports.push(consume_path(self));
+                        }
+                        if self.match_token(&[TokenType::Comma]) {
+                            continue;
+                        }
+                        if !self.check(&TokenType::Dedent) {
+                            self.match_token(&[TokenType::Newline]);
+                        }
+                    }
+                    self.consume(TokenType::Dedent, "Expect dedent after import list.");
+                    break;
+                } else {
+                    break;
+                }
+            }
+
+            break;
+        }
+        Stmt::Import(_imports)
     }
 
     fn fn_declaration(&mut self) -> Stmt {
@@ -155,7 +212,7 @@ impl Parser {
                         return Stmt::Expression(Expr::Assign {
                             name,
                             value: Box::new(value),
-                            index: None
+                            index: None,
                         });
                     }
                 }
@@ -196,15 +253,19 @@ impl Parser {
             let equals = self.previous();
             let value = self.assignment();
 
-            if let Expr::Variable{name, ..} = expr {
+            if let Expr::Variable { name, .. } = expr {
                 return Expr::Assign {
                     name,
                     value: Box::new(value),
-                    index: None
+                    index: None,
                 };
             }
             // panic!("Line {}: Invalid assignment target.", equals.line);
-            vex_pars_panic!(self.peek().line, ErrorCode::Unknown, Some(format!("Line {}: Invalid assignment target.", equals.line)));
+            vex_pars_panic!(
+                self.peek().line,
+                ErrorCode::Unknown,
+                Some(format!("Line {}: Invalid assignment target.", equals.line))
+            );
         }
         expr
     }
@@ -368,7 +429,10 @@ impl Parser {
             }
             TokenType::Identifier => {
                 self.advance();
-                Expr::Variable{name: self.previous(), index: None}
+                Expr::Variable {
+                    name: self.previous(),
+                    index: None,
+                }
             }
             TokenType::LeftParen => {
                 self.advance();
@@ -383,7 +447,11 @@ impl Parser {
                 //     self.peek().token_type
                 // );
 
-                vex_pars_panic!(self.peek().line, ErrorCode::Unknown, Some(format!("{:?}", self.peek().token_type)));
+                vex_pars_panic!(
+                    self.peek().line,
+                    ErrorCode::Unknown,
+                    Some(format!("{:?}", self.peek().token_type))
+                );
             }
         }
     }
@@ -439,11 +507,11 @@ impl Parser {
         }
         self.previous()
     }
-     #[inline]
+    #[inline]
     fn is_at_end(&self) -> bool {
         matches!(self.peek().token_type, TokenType::Eof)
     }
-     #[inline]
+    #[inline]
     fn peek(&self) -> &Token {
         &self.tokens[self.current]
     }
@@ -457,6 +525,10 @@ impl Parser {
             return self.advance();
         }
         // panic!("Error (Line {}): {}", self.peek().line, message);
-        vex_pars_panic!(self.peek().line, ErrorCode::Unknown, Some(message.to_string()));
+        vex_pars_panic!(
+            self.peek().line,
+            ErrorCode::Unknown,
+            Some(message.to_string())
+        );
     }
 }

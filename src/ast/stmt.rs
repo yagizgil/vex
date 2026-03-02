@@ -43,6 +43,7 @@ pub enum Stmt {
 
     Expression(Expr),
     Block(Vec<Stmt>),
+    Import(Vec<String>)
 }
 
 impl Stmt {

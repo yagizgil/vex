@@ -31,6 +31,15 @@ impl Scanner {
             self.scan_token();
         }
 
+        while self.indent_stack.len() > 1 {
+            self.indent_stack.pop();
+            self.tokens.push(Token {
+                token_type: TokenType::Dedent,
+                lexeme: "".to_string(),
+                line: self.line,
+            });
+        }
+
         self.tokens.push(Token {
             token_type: TokenType::Eof,
             lexeme: "".to_string(),
@@ -115,7 +124,7 @@ impl Scanner {
                 } else if c.is_alphabetic() || c == '_' {
                     self.identifier();
                 } else {
-                    self._rerr(ErrorCode::UnexpectedChar,Some(c.to_string()));
+                    self._rerr(ErrorCode::UnexpectedChar, Some(c.to_string()));
                 }
             }
         }
