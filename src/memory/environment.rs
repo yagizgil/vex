@@ -1,4 +1,5 @@
 use crate::ast::expr::LiteralValue;
+use crate::utils::logger::error::ErrorCode;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -42,7 +43,10 @@ impl Environment {
             return outer.borrow().get_global(name);
         }
 
-        panic!("Global variable '{}' not found.", name);
+        vex_mem_panic!(
+            ErrorCode::Memory,
+            Some(format!("Global variable '{}' not found.", name))
+        );
     }
 
     pub fn assign_global(&mut self, name: String, value: LiteralValue) {
@@ -56,17 +60,23 @@ impl Environment {
             return;
         }
 
-        panic!("Global variable '{}' not found.", name);
+        vex_mem_panic!(
+            ErrorCode::Memory,
+            Some(format!("Global variable '{}' not found.", name))
+        );
     }
-    
+
     pub fn get_at(&self, distance: usize, index: usize) -> LiteralValue {
         if distance == 0 {
             return self.values.get(index).cloned().unwrap_or_else(|| {
-                panic!(
-                    "Local index out of bounds: index {} but len is {}",
-                    index,
-                    self.values.len()
-                )
+                vex_mem_panic!(
+                    ErrorCode::Memory,
+                    Some(format!(
+                        "Local index out of bounds: index {} but len is {}",
+                        index,
+                        self.values.len()
+                    ))
+                );
             });
         }
 
@@ -77,12 +87,15 @@ impl Environment {
             .get(index)
             .cloned()
             .unwrap_or_else(|| {
-                panic!(
-                    "Ancestor index out of bounds: distance {} index {} but len is {}",
-                    distance,
-                    index,
-                    ancestor_borrow.values.len()
-                )
+                vex_mem_panic!(
+                    ErrorCode::Memory,
+                    Some(format!(
+                        "Ancestor index out of bounds: distance {} index {} but len is {}",
+                        distance,
+                        index,
+                        ancestor_borrow.values.len()
+                    ))
+                );
             })
     }
 

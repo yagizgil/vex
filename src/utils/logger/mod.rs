@@ -145,3 +145,36 @@ macro_rules! vex_int_panic {
         std::process::exit(1);
     };
 }
+
+
+// --- MEMORU ERROR MACROS ---
+#[macro_export]
+macro_rules! vex_mem_err {
+    ($code:expr, $detail:expr) => {
+        if $crate::utils::logger::REPORT_ENABLED.load(std::sync::atomic::Ordering::Relaxed) {
+            $crate::utils::logger::error::Reporter::add($crate::utils::logger::error::VexError::Memory(
+                $code, $detail.into(),
+            ));
+        }
+    };
+    ($code:expr) => {
+        if $crate::utils::logger::REPORT_ENABLED.load(std::sync::atomic::Ordering::Relaxed) {
+            $crate::utils::logger::error::Reporter::add($crate::utils::logger::error::VexError::Memory(
+                $code, None,
+            ));
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! vex_mem_panic {
+    ($code:expr, $detail:expr) => {
+        $crate::inspect_dump!("vex_memory_crash.json");
+        $crate::vex_mem_err!($code, $detail);
+        if $crate::utils::logger::REPORT_ENABLED.load(std::sync::atomic::Ordering::Relaxed) {
+            $crate::vex_internal_trace!();
+            $crate::utils::logger::error::Reporter::display();
+        }
+        std::process::exit(1);
+    };
+}

@@ -9,7 +9,8 @@ pub enum ErrorCode {
     ExprExpected = 200,
     VarUndefined = 300,
     MathDivideByZero = 400,
-    VarNotResolv = 500
+    VarNotResolv = 500,
+    Memory = 600
 }
 
 impl ErrorCode {
@@ -22,7 +23,8 @@ impl ErrorCode {
             ErrorCode::ExprExpected => "Expression expected.",
             ErrorCode::VarUndefined => "Undefined variable reference.",
             ErrorCode::MathDivideByZero => "Divide by zero.",
-            ErrorCode::VarNotResolv => "Value not resolved."
+            ErrorCode::VarNotResolv => "Value not resolved.",
+            ErrorCode::Memory => "Memory error.",
         }
     }
 }
@@ -32,6 +34,7 @@ pub enum VexError {
     Lexer(usize, ErrorCode, Option<String>),
     Parser(usize, ErrorCode, Option<String>),
     Interpreter(usize, ErrorCode, Option<String>),
+    Memory(ErrorCode, Option<String>),
 }
 
 pub struct Reporter {
@@ -55,6 +58,7 @@ impl Reporter {
                     VexError::Lexer(l, c, d) => ("Lexical", "\x1b[31m", l, c, d, "L"),
                     VexError::Parser(l, c, d) => ("Syntax", "\x1b[33m", l, c, d, "P"),
                     VexError::Interpreter(l, c, d) => ("Interpreter", "\x1b[35m", l, c, d, "R"),
+                    VexError::Memory(c, d) => ("Memory", "\x1b[31m", &0usize, c, d, "M"),
                 };
 
                 let detail_str = detail.as_ref()

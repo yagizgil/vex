@@ -16,6 +16,10 @@ impl Resolver {
     pub fn resolve_statements(&mut self, statements: &mut [Stmt]) {
         for stmt in statements {
             self.resolve_stmt(stmt);
+
+            // ------ Inspector Record ------
+            inspect!("Resolver", &vec![], &vec![stmt.clone()], "ok.");
+            // ------ Inspector Record ------
         }
     }
 
