@@ -155,6 +155,7 @@ impl Parser {
                         return Stmt::Expression(Expr::Assign {
                             name,
                             value: Box::new(value),
+                            index: None
                         });
                     }
                 }
@@ -195,10 +196,11 @@ impl Parser {
             let equals = self.previous();
             let value = self.assignment();
 
-            if let Expr::Variable(name) = expr {
+            if let Expr::Variable{name, ..} = expr {
                 return Expr::Assign {
                     name,
                     value: Box::new(value),
+                    index: None
                 };
             }
             // panic!("Line {}: Invalid assignment target.", equals.line);
@@ -366,7 +368,7 @@ impl Parser {
             }
             TokenType::Identifier => {
                 self.advance();
-                Expr::Variable(self.previous())
+                Expr::Variable{name: self.previous(), index: None}
             }
             TokenType::LeftParen => {
                 self.advance();

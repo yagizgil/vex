@@ -1,4 +1,3 @@
-
 use crate::lexer::token::*;
 
 #[derive(Debug, Clone)]
@@ -9,32 +8,35 @@ pub enum LiteralValue {
     Null,
 }
 
-
 #[derive(Debug, Clone)]
 pub enum Expr {
-    Binary { 
-        left: Box<Expr>, 
-        operator: Token, 
-        right: Box<Expr> 
+    Binary {
+        left: Box<Expr>,
+        operator: Token,
+        right: Box<Expr>,
     },
-    
-    Unary { 
-        operator: Token, 
-        right: Box<Expr> 
+
+    Unary {
+        operator: Token,
+        right: Box<Expr>,
     },
 
     Literal(LiteralValue),
 
-    Variable(Token),
-
-    Assign { 
-        name: Token, 
-        value: Box<Expr> 
+    Variable {
+        name: Token,
+        index: Option<(usize, usize)>,
     },
 
-    Call { 
+    Assign {
+        name: Token,
+        value: Box<Expr>,
+        index: Option<(usize, usize)>,
+    },
+
+    Call {
         callee: Box<Expr>,
-        arguments: Vec<Expr> 
+        arguments: Vec<Expr>,
     },
 
     Grouping(Box<Expr>),

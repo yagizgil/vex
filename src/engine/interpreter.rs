@@ -4,7 +4,6 @@ use crate::memory::Environment;
 use crate::utils::logger::error::ErrorCode;
 
 use std::cell::RefCell;
-use std::fmt::format;
 use std::rc::Rc;
 
 pub struct Interpreter {
@@ -35,13 +34,11 @@ impl Interpreter {
                 initializer,
             } => {
                 let value = self.evaluate(initializer);
-                self.environment
-                    .borrow_mut()
-                    .define(name.lexeme.clone(), value);
+                self.environment.borrow_mut().define(name.lexeme.clone(), value);
             }
             Stmt::Expression(Expr::Call { callee, arguments }) => {
-                if let Expr::Variable(t) = &**callee {
-                    if t.lexeme == "print" {
+                if let Expr::Variable { name, index, .. } = &**callee {
+                    if name.lexeme == "print" {
                         for arg in arguments {
                             let val = self.evaluate(arg);
                             println!("{:?}", val);
@@ -80,10 +77,7 @@ impl Interpreter {
 
     fn execute_block(&mut self, statements: &[Stmt]) {
         let previous = Rc::clone(&self.environment);
-        let local_env = Rc::new(RefCell::new(Environment {
-            values: std::collections::HashMap::new(),
-            enclosing: Some(previous),
-        }));
+        let local_env = Environment::with_enclosing(previous);
 
         self.environment = local_env;
         self.interpret(statements);
@@ -100,12 +94,32 @@ impl Interpreter {
     pub fn evaluate(&mut self, expr: &Expr) -> LiteralValue {
         match expr {
             Expr::Literal(value) => value.clone(),
-            Expr::Variable(name) => self.environment.borrow().get(&name.lexeme),
-            Expr::Assign { name, value } => {
+            Expr::Variable { name, index } => {
+                if let Some((distance, slot)) = index {
+                    self.environment.borrow().get_at(*distance, *slot)
+                } else {
+                    self.environment.borrow().get_global(&name.lexeme)
+                    // vex_int_panic!(
+                    //     self.current.as_ref().map(|s| s.line()).unwrap_or(0),
+                    //     ErrorCode::VarNotResolv,
+                    //     Some(format!("Variable '{}' not resolved!", name.lexeme))
+                    // );
+                }
+            }
+            Expr::Assign { name, value, index } => {
                 let val = self.evaluate(value);
-                self.environment
-                    .borrow_mut()
-                    .assign(name.lexeme.clone(), val.clone());
+                if let Some((distance, slot)) = index {
+                    self.environment
+                        .borrow_mut()
+                        .assign_at(*distance, *slot, val.clone());
+                } else {
+                    self.environment.borrow_mut().assign_global(name.lexeme.clone(), val.clone());
+                    // vex_int_panic!(
+                    //     self.current.as_ref().map(|s| s.line()).unwrap_or(0),
+                    //     ErrorCode::VarNotResolv,
+                    //     Some(format!("Assignment to '{}' not resolved!", name.lexeme))
+                    // );
+                }
                 val
             }
             Expr::Grouping(inner) => self.evaluate(inner),

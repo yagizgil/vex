@@ -4,6 +4,7 @@ use std::time::Instant;
 use crate::engine::Interpreter;
 use crate::lexer::Scanner;
 use crate::parser::Parser;
+use crate::engine::Resolver;
 
 use crate::utils::logger::error::Reporter;
 
@@ -38,6 +39,9 @@ pub fn lexpars(args: &[String]) {
     let mut scanner = Scanner::new(source);
     let tokens = scanner.scan_tokens();
 
+    let mut resolver = Resolver::new();
+    // resolver.begin_scope();
+
     if show_lex {
         println!("\n[LEXER OUTPUT] for '{}':", file_path);
         println!("---------------------------------------");
@@ -49,7 +53,8 @@ pub fn lexpars(args: &[String]) {
 
     if show_pars || show_eng {
         let mut parser = Parser::new(tokens);
-        let ast = parser.parse();
+        let mut ast = parser.parse();
+        resolver.resolve_statements(&mut ast);
 
         if show_pars {
             println!("\n[PARSER AST OUTPUT] for '{}':", file_path);
