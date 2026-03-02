@@ -2,9 +2,9 @@ use std::process;
 use std::time::Instant;
 
 use crate::engine::Interpreter;
+use crate::engine::Resolver;
 use crate::lexer::Scanner;
 use crate::parser::Parser;
-use crate::engine::Resolver;
 
 use crate::utils::logger::error::Reporter;
 
@@ -78,19 +78,18 @@ pub fn lexpars(args: &[String]) {
     _report();
 
     let check_cli_usage = || {
-    let flags = [show_lex, show_pars, show_eng, show_report, _all];
-    
-    if flags.iter().all(|&f| !f) {
-        println!("--------------------------------------------------");
-        println!("Hint: You didn't specify any output flags.");
-        println!("   Try running with -all for full debug output.");
-        println!("   Or use specific: -lex, -pars, -eng, -r");
-        println!("--------------------------------------------------");
-    }
-};
+        let flags = [show_lex, show_pars, show_eng, show_report, _all];
 
-// Program sonunda tek satırda çağır
-check_cli_usage();
+        if flags.iter().all(|&f| !f) {
+            println!("--------------------------------------------------");
+            println!("Hint: You didn't specify any output flags.");
+            println!("   Try running with -all for full debug output.");
+            println!("   Or use specific: -lex, -pars, -eng, -r");
+            println!("--------------------------------------------------");
+        }
+    };
+
+    check_cli_usage();
 }
 
 fn print_timer(label: &str, start: Instant) {

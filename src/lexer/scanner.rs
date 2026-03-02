@@ -147,7 +147,7 @@ impl Scanner {
 
             "struct" => TokenType::Struct,
             "impl" => TokenType::Impl,
-            "use" => TokenType::Use,
+            "import" => TokenType::Import,
             "define" => TokenType::Define,
             "def" => TokenType::Define,
             "macro" => TokenType::Macro,

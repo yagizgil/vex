@@ -15,7 +15,7 @@ pub enum TokenType {
 
     Var, Fn, Return, If, Elif,  Else, For, In, Match, Const,
     
-    Struct, Impl, Use, Define, Macro, Self_,
+    Struct, Impl, Import, Define, Macro, Self_,
     
     Async, Await,
     Ok, Err, Try,
