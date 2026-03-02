@@ -1,4 +1,7 @@
-#[derive(Debug, Clone, PartialEq)]
+use serde::Serialize;
+
+#[derive(Serialize, Debug, Clone, PartialEq)]
+#[serde(tag = "type", content = "value")]
 pub enum TokenType {
     Dot, Minus, Colon, Comma, Plus, Star, Slash, Equal, Bang, SemiColon,
     LeftParen, RightParen,   // ( )
@@ -32,7 +35,7 @@ pub enum TokenType {
     Break, Continue, While
 }
 
-#[derive(Debug, Clone)]
+#[derive(Serialize, Debug, Clone)]
 pub struct Token {
     pub token_type: TokenType,
     pub lexeme: String,

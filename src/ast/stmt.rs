@@ -2,7 +2,9 @@ use crate::lexer::token::*;
 use crate::ast::vtype::VarType;
 use crate::ast::expr::Expr;
 
-#[derive(Debug, Clone)]
+use serde::Serialize;
+
+#[derive(Serialize, Debug, Clone)]
 pub enum Stmt {
     Var { 
         name: Token, 

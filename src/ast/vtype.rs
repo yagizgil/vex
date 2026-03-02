@@ -1,6 +1,7 @@
 use crate::lexer::token::*;
+use serde::Serialize;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Serialize, Debug, Clone, PartialEq)]
 pub enum VarType {
     Any,
     Int,

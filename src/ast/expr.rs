@@ -1,6 +1,7 @@
 use crate::lexer::token::*;
+use serde::Serialize;
 
-#[derive(Debug, Clone)]
+#[derive(Serialize, Debug, Clone)]
 pub enum LiteralValue {
     Number(f64),
     Str(String),
@@ -8,7 +9,7 @@ pub enum LiteralValue {
     Null,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Serialize, Debug, Clone)]
 pub enum Expr {
     Binary {
         left: Box<Expr>,
