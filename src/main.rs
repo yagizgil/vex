@@ -2,21 +2,21 @@
 pub mod utils;
 
 mod ast;
-mod lexer;
-mod parser;
 mod dbg;
 mod engine;
+mod lexer;
 mod memory;
+mod parser;
 
 use std::env;
 use std::fs;
 use std::process;
 use std::time;
 use std::time::Instant;
+use std::path::Path;
 
 use crate::lexer::Scanner;
 use crate::parser::Parser;
-
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -33,7 +33,6 @@ fn main() {
             raise_if_no_file(&args, command);
             let file_path = &args[2];
             let _source = read_file(file_path);
-            
         }
 
         "dbg" => {
@@ -43,6 +42,28 @@ fn main() {
             }
 
             dbg::lexpars(&args);
+        }
+
+        #[cfg(feature = "inspector")]
+        "inspect" => {
+            raise_if_no_file(&args, "inspect");
+            let file_path = &args[2];
+            let source = read_file(file_path);
+
+            let mut scanner = Scanner::new(source);
+            let tokens = scanner.scan_tokens();
+
+            let mut parser = Parser::new(tokens);
+            let _ast = parser.parse();
+
+            let file_name = Path::new(file_path)
+                .file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or("output");
+
+            let output_name = format!("{}_inspect.json", file_name);
+
+            inspect_dump!(&output_name);
         }
 
         _ => {

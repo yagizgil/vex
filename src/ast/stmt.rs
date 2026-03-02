@@ -2,9 +2,8 @@ use crate::lexer::token::*;
 use crate::ast::vtype::VarType;
 use crate::ast::expr::Expr;
 
-use serde::Serialize;
-
-#[derive(Serialize, Debug, Clone)]
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "inspector", derive(serde::Serialize))]
 pub enum Stmt {
     Var { 
         name: Token, 

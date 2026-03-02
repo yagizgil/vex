@@ -1,7 +1,7 @@
 use crate::lexer::token::*;
-use serde::Serialize;
 
-#[derive(Serialize, Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "inspector", derive(serde::Serialize))]
 pub enum VarType {
     Any,
     Int,

@@ -308,11 +308,24 @@ impl Scanner {
 
     fn add_token(&mut self, t_type: TokenType) {
         let text: String = self.source[self.start..self.current].iter().collect();
-        self.tokens.push(Token {
-            token_type: t_type,
-            lexeme: text,
+
+        let new_token = Token {
+            token_type: t_type.clone(),
+            lexeme: text.clone(),
             line: self.line,
-        });
+        };
+        self.tokens.push(new_token);
+
+        // ------ Inspector Record ------
+        inspect!(
+            "Lexer",
+            &self.tokens,
+            &vec![],
+            "Token: {} ({:?})",
+            text,
+            t_type
+        );
+        // ------ Inspector Record ------
     }
 }
 

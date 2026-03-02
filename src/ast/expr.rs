@@ -1,7 +1,7 @@
 use crate::lexer::token::*;
-use serde::Serialize;
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "inspector", derive(serde::Serialize))]
 pub enum LiteralValue {
     Number(f64),
     Str(String),
@@ -9,7 +9,8 @@ pub enum LiteralValue {
     Null,
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "inspector", derive(serde::Serialize))]
 pub enum Expr {
     Binary {
         left: Box<Expr>,

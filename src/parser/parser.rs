@@ -18,7 +18,12 @@ impl Parser {
             if self.match_token(&[TokenType::Newline]) {
                 continue;
             }
-            statements.push(self.declaration());
+            let stmt = self.declaration();
+            statements.push(stmt);
+
+            // ------ Inspector Record ------
+            inspect!("Parser", &self.tokens, &statements, "ok.");
+            // ------ Inspector Record ------
         }
         statements
     }
@@ -26,7 +31,18 @@ impl Parser {
     fn declaration(&mut self) -> Stmt {
         while self.match_token(&[TokenType::Newline]) {}
 
-        match self.peek().token_type {
+        let peek_type = self.peek().token_type.clone();
+
+        // ------ Inspector Record ------
+        inspect!(
+            "Parser",
+            &self.tokens,
+            &vec![],
+            "({:?})", peek_type
+        );
+        // ------ Inspector Record ------
+
+        match peek_type {
             TokenType::Fn => {
                 self.advance();
                 self.fn_declaration()
