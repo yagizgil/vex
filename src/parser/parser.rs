@@ -314,7 +314,7 @@ impl Parser {
                 Expr::Literal(LiteralValue::Str(value))
             }
             TokenType::FString(val) => {
-                let value = val.clone();
+                let value = LiteralValue::Str(val.clone());
                 self.advance();
                 Expr::FString(value)
             }
