@@ -252,6 +252,7 @@ impl Parser {
             TokenType::Identifier
                 | TokenType::NumberLiteral(_)
                 | TokenType::StringLiteral(_)
+                | TokenType::FString(_)
                 | TokenType::LeftParen
                 | TokenType::LeftBracket
                 | TokenType::LeftBrace
@@ -312,6 +313,11 @@ impl Parser {
                 self.advance();
                 Expr::Literal(LiteralValue::Str(value))
             }
+            TokenType::FString(val) => {
+                let value = val.clone();
+                self.advance();
+                Expr::FString(value)
+            }
             TokenType::Identifier => {
                 self.advance();
                 Expr::Variable {
@@ -327,11 +333,11 @@ impl Parser {
             }
             TokenType::LeftBracket => {
                 self.advance();
-                self.list()
+                VariableDecl::list(self)
             }
             TokenType::LeftBrace => {
                 self.advance();
-                self.dict()
+                VariableDecl::dict(self)
             }
             _ => {
                 // panic!(
@@ -352,33 +358,6 @@ impl Parser {
 
     pub(crate) fn consume_end_of_statement(&mut self) {
         while self.match_token(&[TokenType::Newline]) {}
-    }
-
-    pub(crate) fn list(&mut self) -> Expr {
-        let mut elements = Vec::new();
-        while !self.check(&TokenType::RightBracket) && !self.is_at_end() {
-            elements.push(self.assignment());
-            if !self.match_token(&[TokenType::Comma]) {
-                break;
-            }
-        }
-        self.consume(TokenType::RightBracket, "Expect ']' after list items.");
-        Expr::List { elements }
-    }
-
-    pub(crate) fn dict(&mut self) -> Expr {
-        let mut entries = Vec::new();
-        while !self.check(&TokenType::RightBrace) && !self.is_at_end() {
-            let key = self.assignment();
-            self.consume(TokenType::Colon, "Expect ':' after dictionary key.");
-            let value = self.assignment();
-            entries.push((key, value));
-            if !self.match_token(&[TokenType::Comma]) {
-                break;
-            }
-        }
-        self.consume(TokenType::RightBrace, "Expect '}' after dictionary items.");
-        Expr::Dict { entries }
     }
 
     pub(crate) fn match_token(&mut self, types: &[TokenType]) -> bool {

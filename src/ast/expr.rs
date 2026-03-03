@@ -24,6 +24,7 @@ pub enum Expr {
     },
 
     Literal(LiteralValue),
+    FString(String),
 
     Variable {
         name: Token,

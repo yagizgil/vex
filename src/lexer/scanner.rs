@@ -119,7 +119,10 @@ impl Scanner {
             }
 
             _ => {
-                if c.is_ascii_digit() {
+                if c == 'f' && (self.peek() == '"' || self.peek() == '\'' || self.peek() == '`') {
+                    let delimiter = self.advance();
+                    self.f_string(delimiter);
+                } else if c.is_ascii_digit() {
                     self.number();
                 } else if c.is_alphabetic() || c == '_' {
                     self.identifier();
@@ -232,6 +235,33 @@ impl Scanner {
             .collect();
 
         self.add_token(TokenType::StringLiteral(value));
+    }
+
+    fn f_string(&mut self, delimiter: char) {
+        while self.peek() != delimiter && !self.is_at_end() {
+            if self.peek() == '\n' {
+                self.line += 1;
+            }
+
+            if self.peek() == '\\' && self.peek_next() == delimiter {
+                self.advance();
+            }
+
+            self.advance();
+        }
+
+        if self.is_at_end() {
+            self._rerr(ErrorCode::UnterminatedString, None);
+            return;
+        }
+
+        self.advance();
+
+        let value: String = self.source[self.start + 2..self.current - 1]
+            .iter()
+            .collect();
+
+        self.add_token(TokenType::FString(value));
     }
 
     fn handle_indentation(&mut self) {

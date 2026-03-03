@@ -14,6 +14,7 @@ pub enum TokenType {
 
     Identifier,
     StringLiteral(String),
+    FString(String),
     NumberLiteral(f64),
 
     Var, Fn, Return, If, Elif,  Else, For, In, Match, Const,

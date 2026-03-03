@@ -144,6 +144,7 @@ impl Resolver {
 
             Expr::List { elements: _ } => {}
             Expr::Dict { entries: _ } => {}
+            Expr::FString(_) => {}
         }
     }
 }

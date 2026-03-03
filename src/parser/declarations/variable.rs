@@ -1,7 +1,7 @@
-use crate::ast::{stmt::Stmt, vtype::VarType};
+use super::Declaration;
+use crate::ast::{stmt::Stmt, vtype::VarType, expr::Expr};
 use crate::lexer::token::TokenType;
 use crate::parser::Parser;
-use super::Declaration;
 
 pub struct VariableDecl;
 
@@ -44,6 +44,8 @@ impl Declaration for VariableDecl {
             initializer,
         }
     }
+
+    
 }
 
 impl VariableDecl {
@@ -57,5 +59,32 @@ impl VariableDecl {
                 | TokenType::TList
                 | TokenType::TDict
         )
+    }
+
+    pub fn list(p: &mut Parser) -> Expr {
+        let mut elements = Vec::new();
+        while !p.check(&TokenType::RightBracket) && !p.is_at_end() {
+            elements.push(p.assignment());
+            if !p.match_token(&[TokenType::Comma]) {
+                break;
+            }
+        }
+        p.consume(TokenType::RightBracket, "Expect ']' after list items.");
+        Expr::List { elements }
+    }
+
+    pub fn dict(p: &mut Parser) -> Expr {
+        let mut entries = Vec::new();
+        while !p.check(&TokenType::RightBrace) && !p.is_at_end() {
+            let key = p.assignment();
+            p.consume(TokenType::Colon, "Expect ':' after dictionary key.");
+            let value = p.assignment();
+            entries.push((key, value));
+            if !p.match_token(&[TokenType::Comma]) {
+                break;
+            }
+        }
+        p.consume(TokenType::RightBrace, "Expect '}' after dictionary items.");
+        Expr::Dict { entries }
     }
 }
