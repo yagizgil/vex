@@ -1,4 +1,4 @@
-use crate::ast::{expr::Expr, expr::LiteralValue, stmt::Stmt, vtype::VarType};
+use crate::ast::{expr::Expr, expr::LiteralValue, stmt::Stmt, vtype::Parameter, vtype::VarType};
 use crate::lexer::token::{Token, TokenType};
 use crate::utils::logger::error::ErrorCode;
 
@@ -158,24 +158,101 @@ impl Parser {
 
     fn fn_declaration(&mut self) -> Stmt {
         let name = self.consume(TokenType::Identifier, "Expect function name.");
+
+        // ------ Inspector Record ------
+        inspect!(
+            "Parser",
+            &[name.clone()],
+            &vec![],
+            "fn_declaration Identifier."
+        );
+        // ------ Inspector Record ------
+
         let mut params = Vec::new();
-        while !self.check(&TokenType::Colon) && !self.is_at_end() {
-            params.push(self.consume(TokenType::Identifier, "Expect parameter name."));
+        while (!self.check(&TokenType::Colon) && !self.check(&TokenType::Minus))
+            && !self.is_at_end()
+        {
+            let name = self.consume(TokenType::Identifier, "Expect parameter name.");
+            let mut ptype = VarType::Any;
+
+            if self.match_token(&[TokenType::Dot]) {
+                ptype = VarType::from(
+                    &self
+                        .consume(self.peek().token_type.clone(), "Expect parameter type.")
+                        .token_type,
+                );
+            }
+
+            let _param = Parameter {
+                name: name,
+                var_type: ptype,
+            };
+            params.push(_param);
         }
+
+        let mut rtype = VarType::Any;
+
+        if self.match_token(&[TokenType::Minus]) {
+            rtype = VarType::from(
+                &self
+                    .consume(
+                        self.peek().token_type.clone(),
+                        "Expect function return type.",
+                    )
+                    .token_type,
+            );
+        }
+
         self.consume(TokenType::Colon, "Expect ':' after parameters.");
         self.consume(TokenType::Newline, "Expect newline after ':'.");
         self.consume(TokenType::Indent, "Expect indentation for function body.");
         let body = self.block();
-        Stmt::Fn { name, params, body }
+        Stmt::Fn {
+            name,
+            params,
+            body,
+            rtype,
+        }
     }
 
     fn var_declaration(&mut self) -> Stmt {
-        let mut _vtype = VarType::from(&self.peek().token_type);
+        let mut _vtype = VarType::Any;
+
+        if matches!(
+            self.peek().token_type,
+            TokenType::TInt
+                | TokenType::TStr
+                | TokenType::TFloat
+                | TokenType::TBool
+                | TokenType::TList
+                | TokenType::TDict
+        ) {
+            _vtype = VarType::from(&self.peek().token_type);
+            self.advance();
+        }
 
         let name = self.consume(TokenType::Identifier, "Expect variable name.");
-        self.match_token(&[TokenType::Equal]);
-        let initializer = self.expression();
+
+        let initializer = if self.match_token(&[TokenType::Equal]) {
+            self.expression()
+        } else {
+            self.expression()
+        };
+
         self.consume_end_of_statement();
+
+        inspect!(
+            "Parser",
+            &vec![name.clone()],
+            &vec![Stmt::Var {
+                name: name.clone(),
+                vtype: _vtype.clone(),
+                initializer: initializer.clone(),
+            }],
+            "Variable declared: {} with type {:?}",
+            name.lexeme,
+            _vtype
+        );
 
         Stmt::Var {
             name,
@@ -544,7 +621,22 @@ impl Parser {
         if self.is_at_end() {
             return false;
         }
-        std::mem::discriminant(&self.peek().token_type) == std::mem::discriminant(t_type)
+
+        let r = std::mem::discriminant(&self.peek().token_type) == std::mem::discriminant(t_type);
+
+        // ------ Inspector Record ------
+        inspect!(
+            "Parser",
+            &[self.peek().clone()],
+            &vec![],
+            "Matching peek({:?}) against expected({:?}) -> Result: {}",
+            self.peek().token_type,
+            t_type,
+            r
+        );
+        // ------ Inspector Record ------
+
+        r
     }
     #[inline]
     fn advance(&mut self) -> Token {
@@ -571,6 +663,11 @@ impl Parser {
             return self.advance();
         }
         // panic!("Error (Line {}): {}", self.peek().line, message);
+
+        // ------ Inspector Record ------
+        inspect!("Parser", &[self.peek().clone()], &vec![], "before panic.");
+        // ------ Inspector Record ------
+
         vex_pars_panic!(
             self.peek().line,
             ErrorCode::Unknown,

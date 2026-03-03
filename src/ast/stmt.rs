@@ -1,5 +1,5 @@
 use crate::lexer::token::*;
-use crate::ast::vtype::VarType;
+use crate::ast::vtype::{VarType, Parameter};
 use crate::ast::expr::Expr;
 
 #[derive(Debug, Clone)]
@@ -13,8 +13,9 @@ pub enum Stmt {
 
     Fn { 
         name: Token, 
-        params: Vec<Token>, 
-        body: Vec<Stmt> 
+        params: Vec<Parameter>, 
+        body: Vec<Stmt> ,
+        rtype: VarType
     },
 
     For {

@@ -35,7 +35,7 @@ pub enum TokenType {
     Break, Continue, While
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "inspector", derive(serde::Serialize))]
 pub struct Token {
     pub token_type: TokenType,

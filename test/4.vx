@@ -1,0 +1,32 @@
+var global_score 100
+global_score "high score"
+
+fn calculate_bonus current.int multiplier.float - float:
+    var res current * multiplier
+    return res
+
+var float current_bonus calculate_bonus 50 1.5
+
+if current_bonus > 70.0:
+    print "Elite Level"
+    print f"Current Bonus: {current_bonus}"
+else:
+    print "Standard Level"
+
+var list levels ["Beginner", "Pro", "Expert"]
+
+for level in levels:
+    print f"Level: {level}"
+
+var int i 0
+while i < 3:
+    print f"Counter: {i}"
+    i = i + 1
+
+# Pattern matching testing (if implemented in parser)
+var status "ok"
+match status:
+    "ok":
+        print "System stable"
+    "error":
+        print "System failure"

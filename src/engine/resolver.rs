@@ -45,12 +45,12 @@ impl Resolver {
                 self.declare(name.lexeme.clone());
             }
 
-            Stmt::Fn { name, params, body } => {
+            Stmt::Fn { name, params, body, rtype } => {
                 self.declare(name.lexeme.clone());
                 
                 self.begin_scope();
                 for param in params {
-                    self.declare(param.lexeme.clone());
+                    self.declare(param.name.lexeme.clone());
                 }
                 self.resolve_statements(body);
                 self.end_scope();

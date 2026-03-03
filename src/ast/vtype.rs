@@ -28,3 +28,10 @@ impl From<&TokenType> for VarType {
 }
 
 
+
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "inspector", derive(serde::Serialize))]
+pub struct Parameter {
+    pub name: Token,
+    pub var_type: VarType,
+}
