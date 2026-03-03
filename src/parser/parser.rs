@@ -1,12 +1,15 @@
-use crate::ast::{expr::Expr, expr::LiteralValue, stmt::Stmt, vtype::Parameter, vtype::VarType};
+use crate::ast::{expr::Expr, expr::LiteralValue, stmt::Stmt};
 use crate::lexer::token::{Token, TokenType};
 use crate::utils::logger::error::ErrorCode;
 
+use crate::parser::declarations::*;
+use crate::parser::statements::*;
+
 pub struct Parser {
-    tokens: Vec<Token>,
-    current: usize,
+    pub tokens: Vec<Token>,
+    pub current: usize,
     #[cfg(feature = "inspector")]
-    _r: usize,
+    pub _r: usize,
 }
 
 impl Parser {
@@ -43,7 +46,7 @@ impl Parser {
     }
 
     #[cfg(feature = "inspector")]
-    fn token_range(&mut self) -> Vec<Token> {
+    pub(crate) fn token_range(&mut self) -> Vec<Token> {
         if self._r < self.current {
             self.tokens[self._r..self.current].to_vec()
         } else {
@@ -51,7 +54,7 @@ impl Parser {
         }
     }
 
-    fn declaration(&mut self) -> Stmt {
+    pub(crate) fn declaration(&mut self) -> Stmt {
         while self.match_token(&[TokenType::Newline]) {}
 
         let peek_type = self.peek().token_type.clone();
@@ -69,7 +72,7 @@ impl Parser {
         match peek_type {
             TokenType::Fn => {
                 self.advance();
-                self.fn_declaration()
+                FunctionDecl::parse(self)
             }
             TokenType::Var
             | TokenType::TInt
@@ -81,271 +84,29 @@ impl Parser {
                 if self.peek().token_type == TokenType::Var {
                     self.advance();
                 }
-                self.var_declaration()
+                VariableDecl::parse(self)
             }
             TokenType::Return => {
                 self.advance();
-                self.return_statement()
+                ReturnStmt::parse(self)
             }
             TokenType::If => {
                 self.advance();
-                self.if_statement()
+                IfStmt::parse(self)
             }
             TokenType::While => {
                 self.advance();
-                self.while_statement()
+                WhileStmt::parse(self)
             }
             TokenType::Import => {
                 self.advance();
-                self.import_declaration()
+                ImportDecl::parse(self)
             }
             _ => self.statement(),
         }
     }
 
-    fn import_declaration(&mut self) -> Stmt {
-        let mut _imports = Vec::new();
-
-        fn consume_path(parser: &mut Parser) -> String {
-            let mut path = parser
-                .consume(TokenType::Identifier, "Expect identifier for import path.")
-                .lexeme
-                .clone();
-            while parser.match_token(&[TokenType::Dot]) {
-                let part = parser.consume(TokenType::Identifier, "Expect identifier after '.'.");
-                path.push('.');
-                path.push_str(&part.lexeme);
-            }
-            path
-        }
-
-        _imports.push(consume_path(self));
-
-        loop {
-            if self.match_token(&[TokenType::Comma]) {
-                while self.match_token(&[TokenType::Newline]) {}
-                _imports.push(consume_path(self));
-                continue;
-            }
-
-            if self.match_token(&[TokenType::Newline]) {
-                if self.check(&TokenType::Indent) {
-                    self.advance();
-
-                    while !self.check(&TokenType::Dedent) && !self.is_at_end() {
-                        while self.match_token(&[TokenType::Newline]) {}
-                        if self.check(&TokenType::Identifier) {
-                            _imports.push(consume_path(self));
-                        }
-                        if self.match_token(&[TokenType::Comma]) {
-                            continue;
-                        }
-                        if !self.check(&TokenType::Dedent) {
-                            self.match_token(&[TokenType::Newline]);
-                        }
-                    }
-                    self.consume(TokenType::Dedent, "Expect dedent after import list.");
-                    break;
-                } else {
-                    break;
-                }
-            }
-
-            break;
-        }
-        Stmt::Import(_imports)
-    }
-
-    fn fn_declaration(&mut self) -> Stmt {
-        let name = self.consume(TokenType::Identifier, "Expect function name.");
-
-        // ------ Inspector Record ------
-        inspect!(
-            "Parser",
-            &[name.clone()],
-            &vec![],
-            "fn_declaration Identifier."
-        );
-        // ------ Inspector Record ------
-
-        let mut params = Vec::new();
-        while (!self.check(&TokenType::Colon) && !self.check(&TokenType::Minus))
-            && !self.is_at_end()
-        {
-            let name = self.consume(TokenType::Identifier, "Expect parameter name.");
-            let mut ptype = VarType::Any;
-
-            if self.match_token(&[TokenType::Dot]) {
-                ptype = VarType::from(
-                    &self
-                        .consume(self.peek().token_type.clone(), "Expect parameter type.")
-                        .token_type,
-                );
-            }
-
-            let _param = Parameter {
-                name: name,
-                var_type: ptype,
-            };
-            params.push(_param);
-        }
-
-        let mut rtype = VarType::Any;
-
-        if self.match_token(&[TokenType::Minus]) {
-            rtype = VarType::from(
-                &self
-                    .consume(
-                        self.peek().token_type.clone(),
-                        "Expect function return type.",
-                    )
-                    .token_type,
-            );
-        }
-
-        self.consume(TokenType::Colon, "Expect ':' after parameters.");
-        self.consume(TokenType::Newline, "Expect newline after ':'.");
-        self.consume(TokenType::Indent, "Expect indentation for function body.");
-        let body = self.block();
-        Stmt::Fn {
-            name,
-            params,
-            body,
-            rtype,
-        }
-    }
-
-    fn var_declaration(&mut self) -> Stmt {
-        let mut _vtype = VarType::Any;
-
-        if matches!(
-            self.peek().token_type,
-            TokenType::TInt
-                | TokenType::TStr
-                | TokenType::TFloat
-                | TokenType::TBool
-                | TokenType::TList
-                | TokenType::TDict
-        ) {
-            _vtype = VarType::from(&self.peek().token_type);
-            self.advance();
-        }
-
-        let name = self.consume(TokenType::Identifier, "Expect variable name.");
-
-        let initializer = if self.match_token(&[TokenType::Equal]) {
-            self.expression()
-        } else {
-            self.expression()
-        };
-
-        self.consume_end_of_statement();
-
-        inspect!(
-            "Parser",
-            &vec![name.clone()],
-            &vec![Stmt::Var {
-                name: name.clone(),
-                vtype: _vtype.clone(),
-                initializer: initializer.clone(),
-            }],
-            "Variable declared: {} with type {:?}",
-            name.lexeme,
-            _vtype
-        );
-
-        Stmt::Var {
-            name,
-            vtype: _vtype,
-            initializer,
-        }
-    }
-
-    fn while_statement(&mut self) -> Stmt {
-        let condition = self.expression();
-        self.consume(TokenType::Colon, "Expect ':' after while condition.");
-        self.consume(TokenType::Newline, "Expect newline after ':'.");
-        self.consume(TokenType::Indent, "Expect indent after while.");
-        let body = self.block();
-        Stmt::While { condition, body }
-    }
-
-    fn if_statement(&mut self) -> Stmt {
-        let condition = self.expression();
-        self.consume(TokenType::Colon, "Expect ':' after condition.");
-        self.consume(TokenType::Newline, "Expect newline after ':'.");
-        self.consume(TokenType::Indent, "Expect indent after colon.");
-        let then_branch = self.block();
-        let mut else_branch = None;
-
-        if self.match_token(&[TokenType::Elif]) {
-            else_branch = Some(Box::new(self.if_statement()));
-        } else if self.match_token(&[TokenType::Else]) {
-            self.consume(TokenType::Colon, "Expect ':' after else.");
-            self.consume(TokenType::Newline, "Expect newline after ':'.");
-            self.consume(TokenType::Indent, "Expect indent after else.");
-            else_branch = Some(Box::new(Stmt::Block(self.block())));
-        }
-
-        Stmt::If {
-            condition,
-            then_branch,
-            else_branch,
-        }
-    }
-
-    fn statement(&mut self) -> Stmt {
-        if self.match_token(&[TokenType::Indent]) {
-            return Stmt::Block(self.block());
-        }
-
-        if let TokenType::Identifier = self.peek().token_type {
-            if self.peek().lexeme != "print" {
-                if self.current + 1 < self.tokens.len() {
-                    let next = &self.tokens[self.current + 1];
-                    if !matches!(
-                        next.token_type,
-                        TokenType::Equal
-                            | TokenType::Plus
-                            | TokenType::Minus
-                            | TokenType::Star
-                            | TokenType::Slash
-                            | TokenType::EqualEqual
-                            | TokenType::BangEqual
-                            | TokenType::Less
-                            | TokenType::LessEqual
-                            | TokenType::Greater
-                            | TokenType::GreaterEqual
-                            | TokenType::Newline
-                            | TokenType::Eof
-                            | TokenType::RightParen
-                            | TokenType::RightBracket
-                            | TokenType::Colon
-                            | TokenType::Comma
-                    ) {
-                        let name = self.consume(TokenType::Identifier, "Expect variable name.");
-                        let value = self.expression();
-                        self.consume_end_of_statement();
-                        return Stmt::Expression(Expr::Assign {
-                            name,
-                            value: Box::new(value),
-                            index: None,
-                        });
-                    } else {
-                        vex_pars_panic!(
-                            self.peek().line,
-                            ErrorCode::Unknown,
-                            Some("statement".to_string())
-                        );
-                    }
-                }
-            }
-        }
-
-        self.expression_statement()
-    }
-
-    fn block(&mut self) -> Vec<Stmt> {
+    pub(crate) fn block(&mut self) -> Vec<Stmt> {
         let mut stmts = Vec::new();
 
         while !self.check(&TokenType::Dedent) && !self.is_at_end() {
@@ -359,17 +120,11 @@ impl Parser {
         stmts
     }
 
-    fn expression_statement(&mut self) -> Stmt {
-        let expr = self.expression();
-        self.consume_end_of_statement();
-        Stmt::Expression(expr)
-    }
-
-    fn expression(&mut self) -> Expr {
+    pub(crate) fn expression(&mut self) -> Expr {
         self.assignment()
     }
 
-    fn assignment(&mut self) -> Expr {
+    pub(crate) fn assignment(&mut self) -> Expr {
         let expr = self.comparison();
 
         if self.match_token(&[TokenType::Equal]) {
@@ -393,7 +148,7 @@ impl Parser {
         expr
     }
 
-    fn comparison(&mut self) -> Expr {
+    pub(crate) fn comparison(&mut self) -> Expr {
         let mut expr = self.term();
         while self.match_token(&[
             TokenType::Greater,
@@ -414,7 +169,7 @@ impl Parser {
         expr
     }
 
-    fn term(&mut self) -> Expr {
+    pub(crate) fn term(&mut self) -> Expr {
         let mut expr = self.factor();
         while self.match_token(&[TokenType::Plus, TokenType::Minus]) {
             let operator = self.previous();
@@ -428,7 +183,7 @@ impl Parser {
         expr
     }
 
-    fn factor(&mut self) -> Expr {
+    pub(crate) fn factor(&mut self) -> Expr {
         let mut expr = self.unary();
         while self.match_token(&[TokenType::Star, TokenType::Slash]) {
             let operator = self.previous();
@@ -442,7 +197,7 @@ impl Parser {
         expr
     }
 
-    fn unary(&mut self) -> Expr {
+    pub(crate) fn unary(&mut self) -> Expr {
         if self.match_token(&[TokenType::Bang, TokenType::Minus]) {
             let operator = self.previous();
             let right = self.unary();
@@ -454,7 +209,7 @@ impl Parser {
         self.call()
     }
 
-    fn call(&mut self) -> Expr {
+    pub(crate) fn call(&mut self) -> Expr {
         let mut expr = self.primary();
 
         loop {
@@ -486,7 +241,7 @@ impl Parser {
         expr
     }
 
-    fn is_argument_start(&self) -> bool {
+    pub(crate) fn is_argument_start(&self) -> bool {
         let t = &self.peek().token_type;
         matches!(
             t,
@@ -500,7 +255,7 @@ impl Parser {
         )
     }
 
-    fn is_binary_operator(&self) -> bool {
+    pub(crate) fn is_binary_operator(&self) -> bool {
         let t = &self.peek().token_type;
         matches!(
             t,
@@ -517,14 +272,15 @@ impl Parser {
         )
     }
 
-    fn peek_next_is(&self, t_type: &TokenType) -> bool {
+    pub(crate) fn peek_next_is(&self, t_type: &TokenType) -> bool {
         if self.current + 1 >= self.tokens.len() {
             return false;
         }
         std::mem::discriminant(&self.tokens[self.current + 1].token_type)
             == std::mem::discriminant(t_type)
     }
-    fn primary(&mut self) -> Expr {
+
+    pub(crate) fn primary(&mut self) -> Expr {
         while self.match_token(&[TokenType::Newline]) {}
 
         match &self.peek().token_type {
@@ -579,21 +335,12 @@ impl Parser {
         }
     }
 
-    fn return_statement(&mut self) -> Stmt {
-        let keyword = self.previous();
-        let mut value = None;
-        if !self.check(&TokenType::Newline) && !self.check(&TokenType::Dedent) {
-            value = Some(self.expression());
-        }
-        self.consume_end_of_statement();
-        Stmt::Return { keyword, value }
-    }
 
-    fn consume_end_of_statement(&mut self) {
+    pub(crate) fn consume_end_of_statement(&mut self) {
         while self.match_token(&[TokenType::Newline]) {}
     }
 
-    fn match_token(&mut self, types: &[TokenType]) -> bool {
+    pub(crate) fn match_token(&mut self, types: &[TokenType]) -> bool {
         for t in types {
             if self.check(t) {
                 self.advance();
@@ -603,21 +350,21 @@ impl Parser {
         false
     }
 
-    fn match_number(&mut self) -> Option<Token> {
+    pub(crate) fn match_number(&mut self) -> Option<Token> {
         if let TokenType::NumberLiteral(_) = self.peek().token_type {
             return Some(self.advance());
         }
         None
     }
 
-    fn match_string(&mut self) -> Option<Token> {
+    pub(crate) fn match_string(&mut self) -> Option<Token> {
         if let TokenType::StringLiteral(_) = self.peek().token_type {
             return Some(self.advance());
         }
         None
     }
 
-    fn check(&self, t_type: &TokenType) -> bool {
+    pub(crate) fn check(&self, t_type: &TokenType) -> bool {
         if self.is_at_end() {
             return false;
         }
@@ -638,27 +385,31 @@ impl Parser {
 
         r
     }
+
     #[inline]
-    fn advance(&mut self) -> Token {
+    pub(crate) fn advance(&mut self) -> Token {
         if !self.is_at_end() {
             self.current += 1;
         }
         self.previous()
     }
+
     #[inline]
-    fn is_at_end(&self) -> bool {
+    pub(crate) fn is_at_end(&self) -> bool {
         matches!(self.peek().token_type, TokenType::Eof)
     }
+
     #[inline]
-    fn peek(&self) -> &Token {
+    pub(crate) fn peek(&self) -> &Token {
         &self.tokens[self.current]
     }
+
     #[inline]
-    fn previous(&self) -> Token {
+    pub(crate) fn previous(&self) -> Token {
         self.tokens[self.current - 1].clone()
     }
 
-    fn consume(&mut self, t_type: TokenType, message: &str) -> Token {
+    pub(crate) fn consume(&mut self, t_type: TokenType, message: &str) -> Token {
         if self.check(&t_type) {
             return self.advance();
         }
