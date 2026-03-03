@@ -33,14 +33,14 @@ impl Interpreter {
         match stmt {
             Stmt::Var {
                 name,
-                vtype,
+                vtype: _,
                 initializer,
             } => {
                 let value = self.evaluate(initializer);
                 self.environment.borrow_mut().define(name.lexeme.clone(), value);
             }
             Stmt::Expression(Expr::Call { callee, arguments }) => {
-                if let Expr::Variable { name, index, .. } = &**callee {
+                if let Expr::Variable { name, index: _, .. } = &**callee {
                     if name.lexeme == "print" {
                         for arg in arguments {
                             let val = self.evaluate(arg);

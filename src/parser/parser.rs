@@ -278,7 +278,7 @@ impl Parser {
         )
     }
 
-    pub(crate) fn peek_next_is(&self, t_type: &TokenType) -> bool {
+    pub(crate) fn _peek_next_is(&self, t_type: &TokenType) -> bool {
         if self.current + 1 >= self.tokens.len() {
             return false;
         }
@@ -391,14 +391,14 @@ impl Parser {
         false
     }
 
-    pub(crate) fn match_number(&mut self) -> Option<Token> {
+    pub(crate) fn _match_number(&mut self) -> Option<Token> {
         if let TokenType::NumberLiteral(_) = self.peek().token_type {
             return Some(self.advance());
         }
         None
     }
 
-    pub(crate) fn match_string(&mut self) -> Option<Token> {
+    pub(crate) fn _match_string(&mut self) -> Option<Token> {
         if let TokenType::StringLiteral(_) = self.peek().token_type {
             return Some(self.advance());
         }

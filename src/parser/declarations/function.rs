@@ -1,7 +1,6 @@
-use crate::ast::{expr::Expr, expr::LiteralValue, stmt::Stmt, vtype::Parameter, vtype::VarType};
-use crate::lexer::token::{Token, TokenType};
+use crate::ast::{stmt::Stmt, vtype::Parameter, vtype::VarType};
+use crate::lexer::token::{TokenType};
 use crate::parser::Parser;
-use crate::utils::logger::error::ErrorCode;
 
 use super::Declaration;
 

@@ -1,4 +1,4 @@
-use crate::ast::expr::{Expr, LiteralValue};
+use crate::ast::expr::{Expr};
 use crate::ast::stmt::Stmt;
 use std::collections::HashMap;
 
@@ -45,7 +45,7 @@ impl Resolver {
                 self.declare(name.lexeme.clone());
             }
 
-            Stmt::Fn { name, params, body, rtype } => {
+            Stmt::Fn { name, params, body, rtype: _ } => {
                 self.declare(name.lexeme.clone());
                 
                 self.begin_scope();
@@ -142,8 +142,8 @@ impl Resolver {
 
             Expr::Literal(_) => {}
 
-            Expr::List { elements } => {}
-            Expr::Dict { entries } => {}
+            Expr::List { elements: _ } => {}
+            Expr::Dict { entries: _ } => {}
         }
     }
 }

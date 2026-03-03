@@ -3,7 +3,6 @@ pub mod error;
 
 pub use core::REPORT_ENABLED;
 pub use error::{ErrorCode, Reporter, VexError};
-use std::sync::atomic::{Ordering};
 
 #[macro_export]
 macro_rules! vex_internal_trace {

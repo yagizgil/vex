@@ -10,10 +10,7 @@ mod parser;
 
 use std::env;
 use std::fs;
-use std::path::Path;
 use std::process;
-use std::time;
-use std::time::Instant;
 
 
 
@@ -49,6 +46,8 @@ fn main() {
             use crate::engine::Resolver;
             use crate::lexer::Scanner;
             use crate::parser::Parser;
+            
+            use std::path::Path;
 
             raise_if_no_file(&args, "inspect");
             crate::utils::logger::REPORT_ENABLED.store(true, std::sync::atomic::Ordering::Relaxed);

@@ -60,7 +60,7 @@ impl Stmt {
             Stmt::Fn { name, .. } => name.line,
             Stmt::For { item, .. } => item.line,
             Stmt::Return { keyword, .. } => keyword.line,
-            Stmt::While { condition, .. } => 0,
+            Stmt::While { condition: _, .. } => 0,
             Stmt::Expression(_expr) => 0,
             Stmt::Block(stmts) => stmts.first().map(|s| s.line()).unwrap_or(0),
             _ => 0,
