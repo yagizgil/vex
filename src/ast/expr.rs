@@ -42,4 +42,10 @@ pub enum Expr {
     },
 
     Grouping(Box<Expr>),
+    List {
+        elements: Vec<Expr>,
+    },
+    Dict {
+        entries: Vec<(Expr, Expr)>,
+    },
 }

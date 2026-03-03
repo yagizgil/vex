@@ -141,6 +141,9 @@ impl Resolver {
             }
 
             Expr::Literal(_) => {}
+
+            Expr::List { elements } => {}
+            Expr::Dict { entries } => {}
         }
     }
 }

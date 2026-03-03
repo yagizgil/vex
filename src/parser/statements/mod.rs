@@ -42,7 +42,7 @@ impl Parser {
                             | TokenType::Comma
                     ) {
                         let name = self.consume(TokenType::Identifier, "Expect variable name.");
-                        let value = self.expression();
+                        let value = self.assignment();
                         self.consume_end_of_statement();
                         return Stmt::Expression(Expr::Assign {
                             name,
@@ -64,7 +64,7 @@ impl Parser {
     }
 
     pub fn expression_statement(&mut self) -> Stmt {
-        let expr = self.expression();
+        let expr = self.assignment();
         self.consume_end_of_statement();
         Stmt::Expression(expr)
     }

@@ -40,6 +40,11 @@ pub enum Stmt {
         value: Option<Expr> 
     },
 
+    Match {
+        condition: Expr,
+        cases: Vec<MatchCase>,
+    },
+
     Break,
     Continue,
 
@@ -61,4 +66,11 @@ impl Stmt {
             _ => 0,
         }
     }
+}
+
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "inspector", derive(serde::Serialize))]
+pub struct MatchCase {
+    pub pattern: Expr,
+    pub body: Vec<Stmt>,
 }

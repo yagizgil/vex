@@ -16,9 +16,9 @@ impl Declaration for VariableDecl {
         let name = p.consume(TokenType::Identifier, "Expect variable name.");
 
         let initializer = if p.match_token(&[TokenType::Equal]) {
-            p.expression()
+            p.assignment()
         } else {
-            p.expression()
+            p.assignment()
         };
 
         p.consume_end_of_statement();

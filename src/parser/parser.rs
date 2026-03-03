@@ -98,6 +98,14 @@ impl Parser {
                 self.advance();
                 WhileStmt::parse(self)
             }
+            TokenType::For => {
+                self.advance();
+                ForStmt::parse(self)
+            }
+            TokenType::Match => {
+                self.advance();
+                MatchStmt::parse(self)
+            }
             TokenType::Import => {
                 self.advance();
                 ImportDecl::parse(self)
@@ -118,10 +126,6 @@ impl Parser {
         }
 
         stmts
-    }
-
-    pub(crate) fn expression(&mut self) -> Expr {
-        self.assignment()
     }
 
     pub(crate) fn assignment(&mut self) -> Expr {
@@ -249,6 +253,8 @@ impl Parser {
                 | TokenType::NumberLiteral(_)
                 | TokenType::StringLiteral(_)
                 | TokenType::LeftParen
+                | TokenType::LeftBracket
+                | TokenType::LeftBrace
                 | TokenType::True
                 | TokenType::False
                 | TokenType::Null
@@ -315,9 +321,17 @@ impl Parser {
             }
             TokenType::LeftParen => {
                 self.advance();
-                let expr = self.expression();
+                let expr = self.assignment();
                 self.consume(TokenType::RightParen, "Expect ')' after expression.");
                 Expr::Grouping(Box::new(expr))
+            }
+            TokenType::LeftBracket => {
+                self.advance();
+                self.list()
+            }
+            TokenType::LeftBrace => {
+                self.advance();
+                self.dict()
             }
             _ => {
                 // panic!(
@@ -338,6 +352,33 @@ impl Parser {
 
     pub(crate) fn consume_end_of_statement(&mut self) {
         while self.match_token(&[TokenType::Newline]) {}
+    }
+
+    pub(crate) fn list(&mut self) -> Expr {
+        let mut elements = Vec::new();
+        while !self.check(&TokenType::RightBracket) && !self.is_at_end() {
+            elements.push(self.assignment());
+            if !self.match_token(&[TokenType::Comma]) {
+                break;
+            }
+        }
+        self.consume(TokenType::RightBracket, "Expect ']' after list items.");
+        Expr::List { elements }
+    }
+
+    pub(crate) fn dict(&mut self) -> Expr {
+        let mut entries = Vec::new();
+        while !self.check(&TokenType::RightBrace) && !self.is_at_end() {
+            let key = self.assignment();
+            self.consume(TokenType::Colon, "Expect ':' after dictionary key.");
+            let value = self.assignment();
+            entries.push((key, value));
+            if !self.match_token(&[TokenType::Comma]) {
+                break;
+            }
+        }
+        self.consume(TokenType::RightBrace, "Expect '}' after dictionary items.");
+        Expr::Dict { entries }
     }
 
     pub(crate) fn match_token(&mut self, types: &[TokenType]) -> bool {
