@@ -1,12 +1,4 @@
 [package]
 name = "vex"
-version = "0.2.3"
+version = "0.3-alpha"
 edition = "2024"
-
-[dependencies]
-serde = { version = "1.0.228", features = ["derive"], optional = true }
-serde_json = { version = "1.0.149", optional = true }
-
-[features]
-default = []
-inspector = ["dep:serde", "dep:serde_json"]
