@@ -1,0 +1,10 @@
+[package]
+name = "vex-loader"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+vex-core = { path = "../vex-core" }
+
+[features]
+inspector = ["vex-core/inspector"]

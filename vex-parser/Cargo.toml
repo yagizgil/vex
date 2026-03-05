@@ -1,0 +1,19 @@
+[package]
+name = "vex-parser"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+vex-core = { path = "../vex-core" }
+vex-lexer = { path = "../vex-lexer" }
+vex-diagnostic = { path = "../vex-diagnostic" }
+serde = { version = "1.0", features = ["derive"], optional = true }
+bumpalo = "3.20.2"
+lasso = "0.7.3"
+rustc-hash = "2.1.1"
+
+[features]
+inspector = ["vex-core/inspector", "vex-lexer/inspector", "vex-diagnostic/inspector", "dep:serde"]
+
+[dev-dependencies]
+insta = "1.46.3"

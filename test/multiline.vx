@@ -1,0 +1,16 @@
+var multiline_str """
+This is a 
+multi-line
+string.
+"""
+
+var single_line_triple '''Another one'''
+
+var fmultiline f"""
+Value: {10 + 20}
+This also spans
+multiple lines.
+"""
+
+print multiline_str
+print fmultiline

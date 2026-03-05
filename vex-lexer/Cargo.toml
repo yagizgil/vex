@@ -1,0 +1,15 @@
+[package]
+name = "vex-lexer"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+vex-core = { path = "../vex-core" }
+vex-diagnostic = { path = "../vex-diagnostic" }
+serde = { version = "1.0", features = ["derive"], optional = true }
+
+[features]
+inspector = ["vex-core/inspector", "dep:serde"]
+
+[dev-dependencies]
+insta = "1.46.3"

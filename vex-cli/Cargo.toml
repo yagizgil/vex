@@ -1,0 +1,21 @@
+[package]
+name = "vex-cli"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+vex-core = { path = "../vex-core" }
+vex-lexer = { path = "../vex-lexer" }
+vex-parser = { path = "../vex-parser" }
+vex-semantics = { path = "../vex-semantics" }
+vex-loader = { path = "../vex-loader" }
+vex-diagnostic = { path = "../vex-diagnostic" }
+colored = "2.1"
+sysinfo = { version = "0.31", optional = true }
+
+vex-inspector = { path = "../vex-inspector", optional = true }
+clap = { version = "4.5.60", features = ["derive"] }
+
+[features]
+inspector = ["vex-inspector", "vex-core/inspector", "vex-lexer/inspector", "vex-parser/inspector", "vex-semantics/inspector", "vex-diagnostic/inspector"]
+performance-stats = ["dep:sysinfo"]

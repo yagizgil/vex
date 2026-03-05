@@ -1,0 +1,6 @@
+var x 10 # This is a comment
+// Another comment
+/* Multi-line
+   comment */
+var y 20
+print x + y

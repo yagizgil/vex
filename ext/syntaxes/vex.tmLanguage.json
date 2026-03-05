@@ -12,11 +12,15 @@
         "keywords": {
             "patterns": [{
                 "name": "keyword.control.vex",
-                "match": "\\b(if|else|elif|while|for|return|break|continue|var|fn|print)\\b"
+                "match": "\\b(if|else|elif|while|for|return|ret|break|continue|var|const|fn|macro|define|def|impl|struct|enum|async|await|pub|priv|static|print|import|match)\\b"
             },
             {
                 "name": "storage.type.vex",
-                "match": "\\b(int|str|float|bool|list|dict)\\b"
+                "match": "\\b(int|str|string|float|bool|list|dict|any)\\b"
+            },
+            {
+                "name": "keyword.operator.logical.vex",
+                "match": "\\b(and|or)\\b"
             },
             {
                 "name": "constant.language.vex",

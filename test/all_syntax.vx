@@ -1,0 +1,224 @@
+import system.io system.net, system.fs
+import math.utils 
+    math.trig
+
+// C-style single line comment
+/*
+   Block comment testing
+   Can span multiple lines!
+*/
+
+# Global declarations
+define PI 3.14159
+define MAX_RETRIES 5
+
+macro log_error msg:
+    print f"[ERROR] {msg}"
+
+pub enum ConnectionState:
+    Disconnected
+    Connecting
+    Connected
+    Error
+
+pub struct User:
+    name.str
+    age.int
+    is_active.bool
+
+pub struct Queue[T]:
+    items.list
+    limit.int
+
+impl Queue[T]:
+    pub fn push item.T - bool:
+        if self.items::len >= self.limit:
+            return false
+        self.items::append item
+        return true
+
+# Usage of generic initialization
+var my_queue Queue[str] [] 100
+my_queue::push "test_payload"
+
+pub struct Server:
+    ip.string
+    metadata.dict
+    
+impl Server:
+    pub static fn initialize target_ip.str -> Server:
+        var initial_meta {"env": "prod", "origin": "system"}
+        return Server target_ip initial_meta
+
+    pub fn get_env -> str:
+        return self.metadata.env
+
+var my_server Server::initialize "192.168.1.10"
+var region my_server.metadata["origin"]
+
+pub async fn fetch_data url.str -> Result:
+    if url == "":
+        return Err "URL cannot be empty"
+    
+    # Assignment without equal sign based on 1.vx syntax
+    var response null
+    if url != "":
+        response "fetched_data"
+        
+    return Ok response
+
+priv fn process_data input.string multiplier.float - float:
+    var res input * multiplier
+    return res
+
+fn categorize_age age.int - str:
+    var category "Unknown"
+    match age:
+        10:
+            category "Child"
+        20: 
+            # nested logic with deep indentation
+            category "Adult"
+            if age > 50:
+                category "Senior Adult"
+        30:
+            category "Senior"
+            
+    return category
+
+# Entry point simulation
+var app_name "Vex Syntax Tester"
+const VERSION 1.0
+
+# Types and Data Structures (Lists & Dicts)
+var list scores [95, 87, 92]
+var dict config {"theme": "dark", "port": 8080, "retry": 3}
+
+# List Access Tests (Bracket, Static Dot, Dynamic)
+var base_score scores[0]
+var mid_score scores.1
+var last_score_index 2
+var last_score scores./last_score_index
+
+# Dictionary Access Tests (Bracket, Static Dot, Dynamic)
+var bracket_port config["port"]
+var current_port config.port
+
+# Dynamic assignment/reading
+var user_choice "theme"
+var active_theme config./user_choice
+config./user_choice "light"
+config["retry"] 5
+
+# Safe / Optional Chaining Access
+var target_env my_server.?metadata.?env
+var safe_dynamic_port config.?/user_choice
+
+var dict queues {"inbox": 150, "outbox": 20, "errors": 5}
+
+# Dictionary built-in methods
+var all_queues queues::keys
+var total_queues queues::len
+print f"Total queues in system: {total_queues}"
+
+var dict active_user {"id": 101, "role": "admin", "status": "active"}
+
+fn update_user_field field_name.str new_value.str - bool:
+    var is_valid active_user::has field_name
+    
+    match is_valid:
+        true:
+            active_user./field_name new_value
+            print f"Success: {field_name} updated to {new_value}."
+            return true
+        false:
+            print f"Error: User does not contain field '{field_name}'!"
+            return false
+
+# Function execution chaining without parenthesis
+var success update_user_field "status" "suspended"
+
+# Advanced F-Strings and String formatting
+var triple_str """
+This is a standard multi-line string.
+It preserves newlines and "quotes".
+"""
+
+var f_triple f"""
+Application: {app_name}
+Version: {VERSION}
+Nested Math: {PI * 2.0}
+"""
+
+var backtick_fstring `Running {app_name} at version {VERSION}!`
+
+# Mathematical and logical expressions
+var int idx 0
+var float total_score 0.0
+
+# While loops and casting (as)
+while idx < 3:
+    total_score total_score + scores[idx] as float
+    idx++
+    
+# Operator testing
+var bool is_valid (total_score >= 250.0) and (app_name != null) or false
+
+if !is_valid:
+    log_error "Invalid state reached!"
+elif total_score < 0.0:
+    print "Negative score?"
+else:
+    print "Normal processing..."
+    
+# Type casting combinations
+var int input_a 1
+
+fn dynamic_calc para.float - int:
+     var c para * 1.5
+     return c as int
+
+var dynamic_b dynamic_calc input_a as float
+var numeric_cast 5 as float
+    
+var decrement_demo 5
+decrement_demo--
+
+# For-loop destructuring 
+for key, value in config:
+    if key == "timeout":
+        continue
+    if key == "unknown":
+        break
+    print f"Config {key}: {value}"
+
+# Method chaining and calls without parenthesis
+var float current_bonus process_data "test" 1.5
+
+# Pattern Matching with Ok and Err (Result unboxing)
+var task_result fetch_data "https://vex.lang.api"
+
+match task_result:
+    Ok(response):
+        print f"Success data: {response}"
+    Err(error):
+        log_error error
+        
+# Await and the `?` Result Unwrapping Operator (Rust style)
+pub async fn bootstrap_system - Result:
+    var system_url "https://api.v1"
+    
+    # Await resolution AND immediate unboxing using ?
+    var init_state await fetch_data system_url ?
+    
+    return Ok init_state
+        
+# Closures / Anonymous functions (assuming fn syntax)
+var multiplier fn x.int -> int:
+    return x * 10
+    
+print multiplier 5
+
+# Statement ending with semicolon
+var a 10; var b 15
+print a; print b
