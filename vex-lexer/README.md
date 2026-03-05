@@ -45,7 +45,6 @@ Below is the performance test on `./test/all_syntax.vx`.
 | #2  | 191.4 µs | 235.4 µs | 168.4 µs | 595.2 µs |
 | #3  | 234.3 µs | 257.8 µs | 166.4 µs | 658.5 µs |
 
-_Note: For this specific file, the hand-written Classic Lexer shows high performance comparable to or slightly faster than Logos. This highlights the efficiency of the manual implementation._
 
 ## Features
 
