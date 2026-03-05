@@ -58,7 +58,10 @@ impl InspectorApp {
                             if !key.modifiers.contains(event::KeyModifiers::SHIFT) => app.step(),
                         
                         // Skip Phase: Tab, Shift+Enter, or S
-                        KeyCode::Tab | KeyCode::Char('S') | KeyCode::Char('s') => app.skip_phase(),
+                        KeyCode::Tab => {
+                             app.focused_pane = (app.focused_pane + 1) % 2;
+                        }
+                        KeyCode::Char('S') | KeyCode::Char('s') => app.skip_phase(),
                         KeyCode::Enter if key.modifiers.contains(event::KeyModifiers::SHIFT) => app.skip_phase(),
 
                         // Export Report: E
@@ -68,33 +71,63 @@ impl InspectorApp {
 
                         // Navigation: Up/Down
                         KeyCode::Up => {
-                            if let Some(idx) = app.selected_token_idx {
+                            if app.focused_pane == 1 && !app.ast.is_empty() {
+                                let idx = app.get_selected_ast_idx().unwrap_or(0);
+                                if idx > 0 {
+                                    app.select_ast(idx - 1);
+                                }
+                            } else {
+                                let idx = app.selected_token_idx.unwrap_or(0);
+                                if idx > 0 {
+                                    app.select_token(idx - 1);
+                                }
+                            }
+                        }
+                        KeyCode::Down => {
+                            if app.focused_pane == 1 && !app.ast.is_empty() {
+                                let idx = app.get_selected_ast_idx().unwrap_or(0);
+                                if idx + 1 < app.ast.len() {
+                                    app.select_ast(idx + 1);
+                                }
+                            } else {
+                                let idx = app.selected_token_idx.unwrap_or(0);
                                 if idx + 1 < app.current_tokens().len() {
                                     app.select_token(idx + 1);
                                 }
                             }
                         }
-                        KeyCode::Down => {
-                            if let Some(idx) = app.selected_token_idx {
-                                if idx > 0 {
-                                    app.select_token(idx - 1);
-                                }
-                            }
+                        KeyCode::PageUp => {
+                            app.code_scroll = app.code_scroll.saturating_sub(5);
+                        }
+                        KeyCode::PageDown => {
+                            app.code_scroll = app.code_scroll.saturating_add(5);
                         }
                         _ => {}
                     },
                     Event::Mouse(mouse) => match mouse.kind {
                         event::MouseEventKind::ScrollUp => {
-                            if let Some(idx) = app.selected_token_idx {
-                                if idx + 1 < app.current_tokens().len() {
-                                    app.select_token(idx + 1);
+                            if app.focused_pane == 1 && !app.ast.is_empty() {
+                                let idx = app.get_selected_ast_idx().unwrap_or(0);
+                                if idx > 0 {
+                                    app.select_ast(idx - 1);
+                                }
+                            } else {
+                                let idx = app.selected_token_idx.unwrap_or(0);
+                                if idx > 0 {
+                                    app.select_token(idx - 1);
                                 }
                             }
                         }
                         event::MouseEventKind::ScrollDown => {
-                            if let Some(idx) = app.selected_token_idx {
-                                if idx > 0 {
-                                    app.select_token(idx - 1);
+                            if app.focused_pane == 1 && !app.ast.is_empty() {
+                                let idx = app.get_selected_ast_idx().unwrap_or(0);
+                                if idx + 1 < app.ast.len() {
+                                    app.select_ast(idx + 1);
+                                }
+                            } else {
+                                let idx = app.selected_token_idx.unwrap_or(0);
+                                if idx + 1 < app.current_tokens().len() {
+                                    app.select_token(idx + 1);
                                 }
                             }
                         }

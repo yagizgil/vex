@@ -58,10 +58,15 @@ impl CompilerApp {
         if self.args.stats { self.metrics.push(self.collector.end_phase("Lexing")); }
 
         // 4. PreParsing
+        // if self.args.stats { self.collector.start_phase(); }
+        // let mut preparser = vex_parser::preparser::PreParser::new(tokens);
+        // let _refined_tokens = preparser.process();
+        // if self.args.stats { self.metrics.push(self.collector.end_phase("PreParsing")); }
+
         if self.args.stats { self.collector.start_phase(); }
-        let mut preparser = vex_parser::preparser::PreParser::new(tokens);
-        let _refined_tokens = preparser.process();
-        if self.args.stats { self.metrics.push(self.collector.end_phase("PreParsing")); }
+        let mut preparser = vex_parser::parser::Parser::new(tokens);
+        let astt = preparser.parse();
+        if self.args.stats { self.metrics.push(self.collector.end_phase("Parsing")); }
 
         let diag = vex_diagnostic::diag!();
         if diag.has_errors() {

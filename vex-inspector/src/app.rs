@@ -4,6 +4,8 @@ use vex_core::token::{Token, TokenType};
 use vex_lexer::Lexer;
 use vex_diagnostic::diagnostic::Diagnostic;
 use vex_parser::preparser::PreParser;
+use vex_parser::Parser;
+use vex_parser::declarations::Declaration;
 use crate::InspectorPhase;
 
 /// InspectorApp is the main state for the TUI debugger.
@@ -17,10 +19,15 @@ pub struct InspectorApp {
     pub lexer_tokens: Vec<Token>,   // Tokens found in Lexer phase
     pub preparser: Option<PreParser>,
     pub refined_tokens: Vec<Token>, // Tokens after PreParser cleanup
+    pub parser: Option<Parser>,
+    pub ast: Vec<Declaration>,      // Abstract Syntax Tree nodes
     pub source: String,             // Original source code text
     
     pub selected_token_idx: Option<usize>,
     pub list_state: ListState,
+    pub ast_list_state: ListState,
+    pub focused_pane: usize,        // 0: Tokens, 1: AST
+    pub ast_token_ranges: Vec<(usize, usize)>, // Maps AST index to its (start_token, end_token) range
     pub diagnostics: Vec<Diagnostic>, // Errors and warnings found so far
     
     pub should_quit: bool,
@@ -51,9 +58,14 @@ impl InspectorApp {
             lexer_tokens: Vec::new(),
             preparser: None,
             refined_tokens: Vec::new(),
+            parser: None,
+            ast: Vec::new(),
             source,
             selected_token_idx: None,
             list_state: ListState::default(),
+            ast_list_state: ListState::default(),
+            focused_pane:0,
+            ast_token_ranges: Vec::new(),
             diagnostics: Vec::new(),
             should_quit: false,
             is_finished: false,
@@ -68,6 +80,10 @@ impl InspectorApp {
         } else {
             &self.refined_tokens
         }
+    }
+
+    pub fn current_ast(&self) -> &Vec<Declaration> {
+        &self.ast
     }
 
     /// Move the compiler forward by exactly one small step.
@@ -94,17 +110,37 @@ impl InspectorApp {
                         self.refined_tokens = pp.refined_tokens.clone();
                         let idx = self.refined_tokens.len().saturating_sub(1);
                         self.select_token(idx);
+                    } else if pp.cursor >= pp.tokens.len() && pp.bracket_stack.is_empty() {
+                        // Phase is finished, move to Parser on NEXT step
+                        self.phase = InspectorPhase::Parser;
+                        self.selected_token_idx = None;
+                        self.list_state.select(None);
                     }
                 } else {
-                    self.phase = InspectorPhase::PreParser;
                     self.preparser = Some(PreParser::new(self.lexer_tokens.clone()));
                     self.selected_token_idx = None;
                     self.list_state.select(None);
-                    return; 
                 }
             }
             InspectorPhase::Parser => {
-                self.is_finished = true;
+                if let Some(parser) = &mut self.parser {
+                    let start_token_idx = parser.idx;
+                    if let Some(decl) = parser.next_declaration() {
+                        self.ast.push(decl);
+                        self.ast_token_ranges.push((start_token_idx, parser.idx));
+                        let idx = self.ast.len() - 1;
+                        self.select_ast(idx);
+                        self.focused_pane = 1; // Focus AST when a new node is added
+                    } else if parser.is_at_end() {
+                        // EOF reached
+                        self.is_finished = true;
+                    }
+                } else {
+                    self.parser = Some(Parser::new(self.refined_tokens.clone()));
+                    self.selected_token_idx = None;
+                    self.focused_pane = 0;
+                    return;
+                }
             }
             _ => {}
         }
@@ -115,9 +151,10 @@ impl InspectorApp {
             self.diagnostics = diag_handler.get_diagnostics().to_vec();
         }
 
-        // STOP if an error occurred
+        // (Diagnostic sync kept)
         if self.diagnostics.iter().any(|d| matches!(d.level, vex_diagnostic::diagnostic::DiagnosticLevel::Error)) {
-            self.is_finished = true;
+            // We don't set is_finished = true anymore, just let the UI show FAILED
+            // This allows the user to still navigate and see what happened.
             if let Some(first_err) = self.diagnostics.iter().find(|d| matches!(d.level, vex_diagnostic::diagnostic::DiagnosticLevel::Error)) {
                 let line = first_err.span.line as u16;
                 if line > 5 {
@@ -126,34 +163,29 @@ impl InspectorApp {
                     self.code_scroll = 0;
                 }
             }
-        } else {
-            // Check for phase completion
-            match self.phase {
-                InspectorPhase::Lexer => {
-                    if let Some(last) = self.lexer_tokens.last() {
-                        if matches!(last.kind, TokenType::Eof) {
-                             // Will transition on next step
-                        }
-                    }
-                }
-                InspectorPhase::PreParser => {
-                    if let Some(pp) = &self.preparser {
-                        if pp.cursor >= pp.tokens.len() && pp.bracket_stack.is_empty() {
-                            self.phase = InspectorPhase::Parser;
-                        }
-                    }
-                }
-                _ => {}
+        }
+    }
+
+    pub fn select_ast(&mut self, idx: usize) {
+        if idx < self.ast.len() {
+            self.ast_list_state.select(Some(idx));
+            
+            // Sync with tokens and code (using ONLY the first token for scrolling)
+            if let Some(&(start, _)) = self.ast_token_ranges.get(idx) {
+                self.select_token(start);
             }
         }
+    }
+
+    pub fn get_selected_ast_idx(&self) -> Option<usize> {
+        self.ast_list_state.selected()
     }
 
     pub fn select_token(&mut self, idx: usize) {
         let tokens_len = self.current_tokens().len();
         if idx < tokens_len {
             self.selected_token_idx = Some(idx);
-            let visual_idx = tokens_len - 1 - idx;
-            self.list_state.select(Some(visual_idx));
+            self.list_state.select(Some(idx));
 
             let tokens = self.current_tokens();
             if let Some(t) = tokens.get(idx) {
