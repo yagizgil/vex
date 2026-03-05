@@ -36,6 +36,12 @@ pub struct InspectorApp {
     // UI state for scrolling and rendering
     pub code_scroll: u16,
     pub last_code_rect: Rect,
+    pub detail_scroll: u16,
+    pub panel_widths: [u16; 4], // Percentages
+    pub dragging_panel: Option<usize>, // Index of the divider being dragged
+    
+    pub traces: Vec<vex_core::trace::TraceNode>, // All traces collected so far
+    pub last_step_traces: Vec<vex_core::trace::TraceNode>, // Traces from the very last step
 }
 
 impl InspectorApp {
@@ -71,6 +77,11 @@ impl InspectorApp {
             is_finished: false,
             code_scroll: 0,
             last_code_rect: Rect::default(),
+            detail_scroll: 0,
+            panel_widths: [15, 20, 25, 40],
+            dragging_panel: None,
+            traces: Vec::new(),
+            last_step_traces: Vec::new(),
         }
     }
 
@@ -145,6 +156,16 @@ impl InspectorApp {
             _ => {}
         }
 
+        // Collect traces
+        #[cfg(feature = "inspector")]
+        {
+            let new_traces = vex_core::trace::take_traces();
+            if !new_traces.is_empty() {
+                self.last_step_traces = new_traces.clone();
+                self.traces.extend(new_traces);
+            }
+        }
+
         // Sync diagnostics
         {
             let diag_handler = diag!();
@@ -181,11 +202,29 @@ impl InspectorApp {
         self.ast_list_state.selected()
     }
 
+    pub fn find_ast_by_token(&self, token_idx: usize) -> Option<usize> {
+        for (idx, (start, end)) in self.ast_token_ranges.iter().enumerate() {
+            if token_idx >= *start && token_idx < *end {
+                return Some(idx);
+            }
+        }
+        None
+    }
+
     pub fn select_token(&mut self, idx: usize) {
         let tokens_len = self.current_tokens().len();
         if idx < tokens_len {
             self.selected_token_idx = Some(idx);
             self.list_state.select(Some(idx));
+
+            // In Parser phase, automatically select the AST node containing this token
+            if self.phase == InspectorPhase::Parser {
+                if let Some(ast_idx) = self.find_ast_by_token(idx) {
+                    if self.ast_list_state.selected() != Some(ast_idx) {
+                        self.ast_list_state.select(Some(ast_idx));
+                    }
+                }
+            }
 
             let tokens = self.current_tokens();
             if let Some(t) = tokens.get(idx) {
@@ -207,6 +246,20 @@ impl InspectorApp {
     }
 
     pub fn handle_click(&mut self, x: u16, y: u16) {
+        // Simple pane focusing
+        let total_width = self.last_code_rect.x + self.last_code_rect.width; // Approx terminal width
+        if total_width > 0 {
+            let mut current_x = 0;
+            for i in 0..4 {
+                let p_width = (total_width as u32 * self.panel_widths[i] as u32 / 100) as u16;
+                if x >= current_x && x < current_x + p_width {
+                    self.focused_pane = i;
+                    break;
+                }
+                current_x += p_width;
+            }
+        }
+
         let rect = self.last_code_rect;
         if x >= rect.x && x < rect.x + rect.width && y >= rect.y && y < rect.y + rect.height {
             let rel_y = (y - rect.y).saturating_sub(1) + self.code_scroll; 
@@ -230,5 +283,16 @@ impl InspectorApp {
                 }
             }
         }
+    }
+
+    pub fn reload(&mut self) -> std::io::Result<()> {
+        let content = std::fs::read_to_string(&self.filename)?;
+        let file_id = self.file_id;
+        let filename = self.filename.clone();
+        
+        let fresh = Self::new(file_id, content, filename);
+        *self = fresh;
+        
+        Ok(())
     }
 }

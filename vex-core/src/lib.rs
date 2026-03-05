@@ -5,3 +5,4 @@ pub mod token;
 pub mod value;
 pub mod ast;
 pub mod span;
+pub mod trace;

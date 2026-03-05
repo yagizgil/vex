@@ -73,3 +73,40 @@ pub fn export_report(app: &InspectorApp) -> io::Result<String> {
 
     Ok(final_path)
 }
+
+pub fn export_tokens_csv(app: &InspectorApp) -> io::Result<String> {
+    let tokens = app.current_tokens();
+    let safe_filename = app.filename.replace('\\', "_").replace('/', "_").replace('.', "_");
+    let final_path = format!("tokens_{}.csv", safe_filename);
+    let mut file = File::create(&final_path)?;
+
+    writeln!(file, "Index,Type,Lexeme,Line,Column")?;
+    for (idx, token) in tokens.iter().enumerate() {
+        let lexeme = token.lexeme().replace('\n', "\\n").replace('"', "\"\"");
+        writeln!(
+            file, 
+            "{},\"{:?}\",\"{}\",{},{}",
+            idx, token.kind, lexeme, token.span.line, token.span.col
+        )?;
+    }
+    Ok(final_path)
+}
+
+pub fn export_ast_json(app: &InspectorApp) -> io::Result<String> {
+    let safe_filename = app.filename.replace('\\', "_").replace('/', "_").replace('.', "_");
+    let final_path = format!("ast_{}.json", safe_filename);
+    let mut file = File::create(&final_path)?;
+
+    let json = serde_json::to_string_pretty(&app.ast).unwrap_or_else(|_| "[]".to_string());
+    file.write_all(json.as_bytes())?;
+
+    Ok(final_path)
+}
+
+pub fn export_all(app: &InspectorApp) -> io::Result<Vec<String>> {
+    let mut paths = Vec::new();
+    paths.push(export_report(app)?);
+    paths.push(export_tokens_csv(app)?);
+    paths.push(export_ast_json(app)?);
+    Ok(paths)
+}

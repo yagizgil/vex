@@ -35,21 +35,40 @@ cargo run --features performance-stats -p vex-cli -- path/to/your_file.vx --stat
 
 ## Using the Vex Inspector (Debugger)
 
-The Inspector is a visual tool. Important: You must use the `inspector` feature for it to work.
+The Inspector is a powerful tool to see how the compiler works. You must use the `inspector` feature for it to work.
 
-To open the Inspector:
+### 🖥️ GUI Inspector (Recommended)
+
+Our new graphical inspector provides a side-by-side view of Lexer tokens, PreParser results, AST nodes, and Source code highlighting.
+
+**To open the GUI Inspector:**
+
+```bash
+cargo run --features inspector -p vex-cli -- path/to/your_file.vx --inspect --gui
+```
+
+**Key Features:**
+
+- **Full View:** Complete pipeline visualization in a single screen.
+- **Execution Trace:** Real-time call stack tracking of the Rust parser algorithms.
+- **Cross-Highlighting:** Clicking a token highlights it in all other lists and the source code.
+- **Automatic Sync:** AST selection automatically scrolls and highlights related tokens.
+
+### ⌨️ TUI Inspector (Terminal)
+
+If you prefer the terminal, you can use the classic TUI inspector:
 
 ```bash
 cargo run --features inspector -p vex-cli -- --inspect path/to/your_file.vx
 ```
 
-### Inspector Shortcuts:
+#### Inspector Shortcuts:
 
-- SPACE / ENTER: Move to the next step.
-- TAB / S: Skip the current phase (fast-forward).
-- E: Export a beautiful Markdown Report of tokens.
-- UP / DOWN: Look through the tokens list.
-- Q: Quit the Inspector.
+- **SPACE**: Move to the next step.
+- **⏭ Skip Phase**: Fast-forward to the next compiler phase.
+- **🔄 Reload (R)**: Reload the source file and restart inspection.
+- **🎯 Focus (F)**: Re-center the view on the current selection.
+- **Q**: Quit the Inspector.
 
 ## Exporting Data
 

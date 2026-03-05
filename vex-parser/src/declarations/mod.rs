@@ -8,6 +8,8 @@ pub mod definedecl;
 pub mod importdecl;
 
 pub use vardecl::VarDecl;
+pub use crate::Parser;
+use vex_core::trace_fn;
 pub use fndecl::FnDecl;
 pub use enumdecl::EnumDecl;
 pub use structdecl::StructDecl;
@@ -19,6 +21,7 @@ pub use importdecl::ImportDecl;
 use vex_core::ast::Stmt;
 
 #[derive(Debug)]
+#[cfg_attr(feature = "inspector", derive(serde::Serialize))]
 pub enum Declaration {
     Var(Stmt),
     Fn(FnDecl),

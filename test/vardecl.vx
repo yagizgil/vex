@@ -1,7 +1,19 @@
 var limit 100
+
 pub var lim2 10.5
 priv var lim3 int 5
+
 var num:float 5
 pub var num2:int 1
+
 var num3.int 2
-var lim 100
+priv num4.float 3.4
+
+var int mil 500
+priv var float lenght 44.77
+
+
+var assg mil
+var assg2.float mil
+
+pub var int assg3 lenght

@@ -13,6 +13,10 @@ pub struct CliArgs {
     #[arg(short = 'i', long)]
     pub inspect: bool,
 
+    /// Start the GUI inspector (instead of TUI)
+    #[arg(long)]
+    pub gui: bool,
+
     /// Show performance and memory statistics
     #[arg(short = 's', long)]
     pub stats: bool,

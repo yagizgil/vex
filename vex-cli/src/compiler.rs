@@ -35,8 +35,14 @@ impl CompilerApp {
         // 2. Inspector (if requested and enabled)
         #[cfg(feature = "inspector")]
         if self.args.inspect {
-            if let Err(e) = vex_inspector::InspectorApp::run(file_id) {
-                eprintln!("Inspector error: {}", e);
+            if self.args.gui {
+                if let Err(e) = vex_inspector::InspectorApp::run_gui(file_id) {
+                    eprintln!("GUI Inspector error: {}", e);
+                }
+            } else {
+                if let Err(e) = vex_inspector::InspectorApp::run(file_id) {
+                    eprintln!("TUI Inspector error: {}", e);
+                }
             }
             return;
         }

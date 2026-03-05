@@ -1,12 +1,12 @@
+use crate::declarations::{
+    Declaration, DefineDecl, EnumDecl, FnDecl, ImplDecl, ImportDecl, MacroDecl, StructDecl, VarDecl,
+};
 use crate::preparser::PreParser;
-use vex_core::token::{Token, TokenType};
 use vex_core::ast::{Expr, Stmt, TypeExpr};
+use vex_core::token::{Token, TokenType};
+use vex_core::trace_fn;
 use vex_diagnostic::diag_emit;
 use vex_diagnostic::error_codes::DiagnosticCode;
-use crate::declarations::{
-    Declaration, EnumDecl, FnDecl, StructDecl, VarDecl, 
-    ImplDecl, MacroDecl, DefineDecl, ImportDecl
-};
 
 pub struct Parser {
     pub tokens: Vec<Token>,
@@ -49,6 +49,13 @@ impl Parser {
         t
     }
 
+    pub fn backup(&mut self) -> Token {
+        if self.idx > 0 {
+            self.idx -= 1;
+        }
+        self.peek().clone()
+    }
+
     pub fn previous(&self) -> &Token {
         &self.tokens[self.idx.saturating_sub(1)]
     }
@@ -88,6 +95,7 @@ impl Parser {
     }
 
     pub fn parse_declaration(&mut self) -> Option<Declaration> {
+        trace_fn!("parse_declaration", "at token={:?}", self.peek().lexeme());
         match self.peek().kind {
             TokenType::Var | TokenType::Const => VarDecl::parse(self).map(Declaration::Var),
             TokenType::Fn => FnDecl::parse(self).map(Declaration::Fn),
@@ -106,7 +114,10 @@ impl Parser {
                 // We'll peek ahead to find the actual declaration core keyword.
                 let mut lookahead = 1;
                 let mut token_type = self.peek_at(lookahead).kind.clone();
-                while matches!(token_type, TokenType::Pub | TokenType::Static | TokenType::Priv | TokenType::Async) {
+                while matches!(
+                    token_type,
+                    TokenType::Pub | TokenType::Static | TokenType::Priv | TokenType::Async
+                ) {
                     lookahead += 1;
                     token_type = self.peek_at(lookahead).kind.clone();
                 }
@@ -116,9 +127,15 @@ impl Parser {
                     TokenType::Struct => StructDecl::parse(self).map(Declaration::Struct),
                     TokenType::Enum => EnumDecl::parse(self).map(Declaration::Enum),
                     TokenType::Impl => ImplDecl::parse(self).map(Declaration::Impl),
+                    // If it's an identifier or a type keyword, it might be a VarDecl without 'var'
+                    TokenType::Identifier 
+                    | TokenType::TInt | TokenType::TStr | TokenType::TFloat | TokenType::TBool 
+                    | TokenType::TAny | TokenType::TList | TokenType::TDict => {
+                        VarDecl::parse(self).map(Declaration::Var)
+                    }
                     _ => None,
                 }
-            },
+            }
             _ => None,
         }
     }
@@ -142,7 +159,10 @@ impl Parser {
             TokenType::Or => Self::PREC_OR,
             TokenType::And => Self::PREC_AND,
             TokenType::EqualEqual | TokenType::BangEqual => Self::PREC_EQUALITY,
-            TokenType::Less | TokenType::LessEqual | TokenType::Greater | TokenType::GreaterEqual => Self::PREC_COMPARISON,
+            TokenType::Less
+            | TokenType::LessEqual
+            | TokenType::Greater
+            | TokenType::GreaterEqual => Self::PREC_COMPARISON,
             TokenType::Plus | TokenType::Minus => Self::PREC_TERM,
             TokenType::Star | TokenType::Slash => Self::PREC_FACTOR,
             TokenType::LeftParen | TokenType::Dot | TokenType::LeftBracket => Self::PREC_CALL,
@@ -175,13 +195,33 @@ impl Parser {
         self.peek_at(1).kind == kind
     }
 
+    /// Checks if the current token could be the start of a type expression.
+    pub fn is_type_start(&self) -> bool {
+        matches!(
+            self.peek().kind,
+            TokenType::Identifier
+                | TokenType::TInt
+                | TokenType::TStr
+                | TokenType::TFloat
+                | TokenType::TBool
+                | TokenType::TAny
+                | TokenType::TList
+                | TokenType::TDict
+                | TokenType::Fn
+        )
+    }
+
     /// Parses a type expression (e.g., int, str, CustomClass, List[str], fn(int) -> bool)
     pub fn parse_type_expr(&mut self) -> Option<TypeExpr> {
+        trace_fn!("parse_type_expr", "at token={:?}", self.peek().lexeme());
         // Function Reference (Callback type) hint: If match_token(Fn)
         if self.match_token(TokenType::Fn) {
             let mut params = Vec::new();
-            self.expect(TokenType::LeftParen, "Expected '(' after 'fn' in type expression");
-            
+            self.expect(
+                TokenType::LeftParen,
+                "Expected '(' after 'fn' in type expression",
+            );
+
             while !self.check(TokenType::RightParen) && !self.is_at_end() {
                 if let Some(t) = self.parse_type_expr() {
                     params.push(t);
@@ -190,12 +230,18 @@ impl Parser {
                     break;
                 }
             }
-            self.expect(TokenType::RightParen, "Expected ')' after function type parameters");
-            
+            self.expect(
+                TokenType::RightParen,
+                "Expected ')' after function type parameters",
+            );
+
             // In Vex, the return arrow is strictly "Minus + Greater" (->)
             self.expect(TokenType::Minus, "Expected '->' for return type");
-            self.expect(TokenType::Greater, "Expected '>' for return type arrow '->'");
-            
+            self.expect(
+                TokenType::Greater,
+                "Expected '>' for return type arrow '->'",
+            );
+
             if let Some(ret) = self.parse_type_expr() {
                 return Some(TypeExpr::Function(params, Box::new(ret)));
             }
@@ -203,12 +249,14 @@ impl Parser {
         }
 
         // Generic or Simple
-        if self.match_token(TokenType::Identifier) 
-            || self.match_token(TokenType::TInt) 
-            || self.match_token(TokenType::TStr) 
-            || self.match_token(TokenType::TFloat) 
-            || self.match_token(TokenType::TBool) 
+        if self.match_token(TokenType::Identifier)
+            || self.match_token(TokenType::TInt)
+            || self.match_token(TokenType::TStr)
+            || self.match_token(TokenType::TFloat)
+            || self.match_token(TokenType::TBool)
             || self.match_token(TokenType::TAny)
+            || self.match_token(TokenType::TList)
+            || self.match_token(TokenType::TDict)
         {
             let name = self.previous().clone();
 
@@ -223,7 +271,10 @@ impl Parser {
                         break;
                     }
                 }
-                self.expect(TokenType::RightBracket, "Expected ']' after generic type list");
+                self.expect(
+                    TokenType::RightBracket,
+                    "Expected ']' after generic type list",
+                );
                 return Some(TypeExpr::Generic(name, generics));
             }
 
@@ -235,6 +286,7 @@ impl Parser {
 
     /// Parses an expression with precedence (Pratt parsing)
     pub fn parse_expression(&mut self, precedence: u8) -> Option<Expr> {
+        trace_fn!("parse_expression", "prec={}, at={:?}", precedence, self.peek().lexeme());
         let mut left = self.parse_prefix()?;
 
         while !self.is_at_end() && precedence < Self::get_precedence(&self.peek().kind) {
@@ -245,26 +297,35 @@ impl Parser {
     }
 
     fn parse_prefix(&mut self) -> Option<Expr> {
+        trace_fn!("parse_prefix", "at={:?}", self.peek().lexeme());
         let token = self.advance();
         match token.kind {
-            TokenType::NumberLiteral(n) => Some(Expr::Literal(vex_core::ast::LiteralValue::Number(n))),
+            TokenType::NumberLiteral(n) => {
+                Some(Expr::Literal(vex_core::ast::LiteralValue::Number(n)))
+            }
             TokenType::StringLiteral(s) => Some(Expr::Literal(vex_core::ast::LiteralValue::Str(s))),
             TokenType::True => Some(Expr::Literal(vex_core::ast::LiteralValue::Bool(true))),
             TokenType::False => Some(Expr::Literal(vex_core::ast::LiteralValue::Bool(false))),
             TokenType::Null => Some(Expr::Literal(vex_core::ast::LiteralValue::Null)),
             TokenType::Identifier => Some(Expr::Variable { name: token }),
-            
+
             TokenType::LeftParen => {
                 let inner = self.parse_expression(0)?;
-                self.expect(TokenType::RightParen, "Expected ')' after grouped expression");
+                self.expect(
+                    TokenType::RightParen,
+                    "Expected ')' after grouped expression",
+                );
                 Some(Expr::Grouping(Box::new(inner)))
             }
 
             TokenType::Bang | TokenType::Minus => {
                 let right = self.parse_expression(Self::PREC_UNARY)?;
-                Some(Expr::Unary { operator: token, right: Box::new(right) })
+                Some(Expr::Unary {
+                    operator: token,
+                    right: Box::new(right),
+                })
             }
-            
+
             // F-String, List, Dict, Await, Closure etc. will go here
             _ => {
                 diag_emit!(Error, P002, "Expected expression".to_string(), token.span);
@@ -274,42 +335,62 @@ impl Parser {
     }
 
     fn parse_infix(&mut self, left: Expr) -> Option<Expr> {
+        trace_fn!("parse_infix", "at={:?}", self.peek().lexeme());
         let token = self.peek().clone();
         let precedence = Self::get_precedence(&token.kind);
-        
+
         match token.kind {
-            TokenType::Plus | TokenType::Minus | TokenType::Star | TokenType::Slash |
-            TokenType::EqualEqual | TokenType::BangEqual | 
-            TokenType::Less | TokenType::LessEqual | TokenType::Greater | TokenType::GreaterEqual => {
+            TokenType::Plus
+            | TokenType::Minus
+            | TokenType::Star
+            | TokenType::Slash
+            | TokenType::EqualEqual
+            | TokenType::BangEqual
+            | TokenType::Less
+            | TokenType::LessEqual
+            | TokenType::Greater
+            | TokenType::GreaterEqual => {
                 self.advance();
                 let right = self.parse_expression(precedence)?;
-                Some(Expr::Binary { left: Box::new(left), operator: token, right: Box::new(right) })
+                Some(Expr::Binary {
+                    left: Box::new(left),
+                    operator: token,
+                    right: Box::new(right),
+                })
             }
 
             TokenType::And | TokenType::Or => {
                 self.advance();
                 let right = self.parse_expression(precedence)?;
-                Some(Expr::Logical { left: Box::new(left), operator: token, right: Box::new(right) })
+                Some(Expr::Logical {
+                    left: Box::new(left),
+                    operator: token,
+                    right: Box::new(right),
+                })
             }
 
             TokenType::Equal => {
                 self.advance();
                 let value = self.parse_expression(Self::PREC_ASSIGNMENT)?;
-                Some(Expr::Assign { target: Box::new(left), operator: token, value: Box::new(value) })
+                Some(Expr::Assign {
+                    target: Box::new(left),
+                    operator: token,
+                    value: Box::new(value),
+                })
             }
 
             // Vex Function Call (No parentheses)
             _ if Self::has_prefix_rule(&token.kind) => {
                 let mut arguments = Vec::new();
                 // Collect arguments as long as they look like expressions and are on the same line
-                while !self.is_at_end() 
-                    && Self::has_prefix_rule(&self.peek().kind) 
-                    && !self.check(TokenType::Newline) 
+                while !self.is_at_end()
+                    && Self::has_prefix_rule(&self.peek().kind)
+                    && !self.check(TokenType::Newline)
                     && !self.check(TokenType::StatementEnd)
                     && !self.check(TokenType::Indent)
                     && !self.check(TokenType::Dedent)
                 {
-                    // Use a precedence high enough to not gobble following operators 
+                    // Use a precedence high enough to not gobble following operators
                     // that might belong to a surrounding expression
                     if let Some(arg) = self.parse_expression(Self::PREC_CALL) {
                         arguments.push(arg);
@@ -317,38 +398,55 @@ impl Parser {
                         break;
                     }
                 }
-                Some(Expr::Call { callee: Box::new(left), arguments, closing_paren: token })
+                Some(Expr::Call {
+                    callee: Box::new(left),
+                    arguments,
+                    closing_paren: token,
+                })
             }
 
             // Dot access, Indexing etc. will go here
-            _ => Some(left)
+            _ => Some(left),
         }
     }
 
     pub fn has_prefix_rule(kind: &TokenType) -> bool {
-        matches!(kind,
-            TokenType::NumberLiteral(_) | TokenType::StringLiteral(_) | 
-            TokenType::True | TokenType::False | TokenType::Null |
-            TokenType::Identifier | TokenType::LeftParen | TokenType::LeftBracket |
-            TokenType::LeftBrace | TokenType::Bang | TokenType::Minus |
-            TokenType::Fn | TokenType::FStringStart | TokenType::Await
+        matches!(
+            kind,
+            TokenType::NumberLiteral(_)
+                | TokenType::StringLiteral(_)
+                | TokenType::True
+                | TokenType::False
+                | TokenType::Null
+                | TokenType::Identifier
+                | TokenType::LeftParen
+                | TokenType::LeftBracket
+                | TokenType::LeftBrace
+                | TokenType::Bang
+                | TokenType::Minus
+                | TokenType::Fn
+                | TokenType::FStringStart
+                | TokenType::Await
         )
     }
 
     /// Parses a general statement (if, while, for, expr stmt, etc.)
     pub fn parse_statement(&mut self) -> Option<Stmt> {
+        trace_fn!("parse_statement", "at={:?}", self.peek().lexeme());
         // Skip leading whitespace-like tokens
         while self.match_token(TokenType::Newline) || self.match_token(TokenType::StatementEnd) {}
 
-        if self.is_at_end() { return None; }
+        if self.is_at_end() {
+            return None;
+        }
 
         match self.peek().kind {
-            TokenType::If => None, // TODO: IfStmt::parse(self)
-            TokenType::While => None, // TODO: WhileStmt::parse(self)
-            TokenType::For => None, // TODO: ForStmt::parse(self)
-            TokenType::Match => None, // TODO: MatchStmt::parse(self)
-            TokenType::Return => None, // TODO: ReturnStmt::parse(self)
-            TokenType::Break => None, // TODO: BreakStmt::parse(self)
+            TokenType::If => None,       // TODO: IfStmt::parse(self)
+            TokenType::While => None,    // TODO: WhileStmt::parse(self)
+            TokenType::For => None,      // TODO: ForStmt::parse(self)
+            TokenType::Match => None,    // TODO: MatchStmt::parse(self)
+            TokenType::Return => None,   // TODO: ReturnStmt::parse(self)
+            TokenType::Break => None,    // TODO: BreakStmt::parse(self)
             TokenType::Continue => None, // TODO: ContinueStmt::parse(self)
             TokenType::LeftBrace => Some(Stmt::Block(self.parse_block())),
             _ => {
@@ -361,11 +459,16 @@ impl Parser {
 
     /// Parses a block of statements { ... } or indented block
     pub fn parse_block(&mut self) -> Vec<Stmt> {
+        trace_fn!("parse_block", "at={:?}", self.peek().lexeme());
         let mut statements = Vec::new();
 
         // Support both { } and Indent/Dedent
         let is_braced = self.match_token(TokenType::LeftBrace);
-        let stop_token = if is_braced { TokenType::RightBrace } else { TokenType::Dedent };
+        let stop_token = if is_braced {
+            TokenType::RightBrace
+        } else {
+            TokenType::Dedent
+        };
 
         if !is_braced {
             self.expect(TokenType::Indent, "Expected indentation for block");

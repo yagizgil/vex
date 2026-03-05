@@ -45,13 +45,14 @@ pub fn render(f: &mut Frame, app: &mut InspectorApp) {
     ])).block(title_block).alignment(Alignment::Center);
     f.render_widget(title_content, v_layout[0]);
 
-    // --- Content Split (Tokens | AST | Code) ---
+    // --- Content Split (Tokens | AST | Details | Code) ---
     let h_layout = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([
-            Constraint::Percentage(20), // Tokens
-            Constraint::Percentage(30), // AST Nodes
-            Constraint::Percentage(50), // Code
+            Constraint::Percentage(app.panel_widths[0]), // Tokens
+            Constraint::Percentage(app.panel_widths[1]), // AST List
+            Constraint::Percentage(app.panel_widths[2]), // AST Detail
+            Constraint::Percentage(app.panel_widths[3]), // Code
         ])
         .split(v_layout[1]);
 
@@ -108,45 +109,24 @@ pub fn render(f: &mut Frame, app: &mut InspectorApp) {
         }).collect();
 
         let a_items: Vec<ListItem> = ast.iter().enumerate().map(|(idx, decl)| {
-            let pretty_ast = format!("{:#?}", decl);
-            let token_range = app.ast_token_ranges.get(idx).cloned().unwrap_or((0, 0));
-
             let mut lines = vec![
                 Line::from(vec![
-                    Span::styled(format!("#{} DECL ", idx), Style::default().fg(Color::Magenta).bold()),
+                    Span::styled(format!("#{} DECLARATION ", idx), Style::default().fg(Color::Magenta).bold()),
                 ])
             ];
+            
+            // Simple info line
+            let token_range = app.ast_token_ranges.get(idx).cloned().unwrap_or((0, 0));
+            lines.push(Line::from(vec![
+                Span::raw(format!("  Tokens: {} to {} ", token_range.0, token_range.1)),
+            ]));
 
-            for line in pretty_ast.lines() {
-                let mut spans = vec![Span::raw("  ")];
-                // Very basic split to isolate potential lexemes for coloring
-                let parts = line.split_inclusive(|c: char| !c.is_alphanumeric() && c != '"' && c != '\'');
-                
-                for part in parts {
-                    let mut style = Style::default();
-                    let trimmed = part.trim_matches(|c: char| !c.is_alphanumeric());
-                    
-                    if !trimmed.is_empty() {
-                         for t_idx in token_range.0..token_range.1 {
-                            if let Some(t) = tokens.get(t_idx) {
-                                if t.lexeme() == trimmed || t.lexeme().trim_matches('"') == trimmed {
-                                    style = style.bg(highlight_colors[t_idx % highlight_colors.len()]).fg(Color::White).bold();
-                                    break;
-                                }
-                            }
-                        }
-                    }
-
-                    if style.bg.is_none() {
-                        if part.contains(':') { style = style.fg(Color::Yellow); }
-                        else if part.contains('"') || part.contains('\'') { style = style.fg(Color::Cyan); }
-                        else if part.chars().any(|c| c.is_numeric()) { style = style.fg(Color::Green); }
-                    }
-
-                    spans.push(Span::styled(part.to_string(), style));
-                }
-                lines.push(Line::from(spans));
-            }
+            // Show a compact preview of the debug string
+            let pretty_ast = format!("{:?}", decl);
+            let display_debug = if pretty_ast.len() > 80 { format!("{}...", &pretty_ast[..77]) } else { pretty_ast };
+            lines.push(Line::from(vec![
+                Span::raw(format!("  Data: {}", display_debug)),
+            ]));
 
             ListItem::new(lines).style(Style::default().fg(Color::White))
         }).collect();
@@ -170,6 +150,69 @@ pub fn render(f: &mut Frame, app: &mut InspectorApp) {
             .border_style(Style::default().fg(if app.focused_pane == 1 { phase_color } else { Color::DarkGray })))
         .highlight_symbol(">> ");
     f.render_stateful_widget(ast_list, h_layout[1], &mut app.ast_list_state);
+
+    // 2.5 AST Detail View (New 4th Panel)
+    let detail_lines = if let Some(idx) = app.get_selected_ast_idx() {
+        if let Some(decl) = app.ast.get(idx) {
+            let pretty_ast = format!("{:#?}", decl);
+            let token_range = app.ast_token_ranges.get(idx).cloned().unwrap_or((0, 0));
+            let tokens = app.current_tokens();
+            
+            let mut lines = Vec::new();
+            for line in pretty_ast.lines() {
+                let mut spans = Vec::new();
+                let parts = line.split_inclusive(|c: char| !c.is_alphanumeric() && c != '"' && c != '\'');
+                
+                for part in parts {
+                    let mut style = Style::default();
+                    let trimmed = part.trim_matches(|c: char| !c.is_alphanumeric());
+                    
+                    if !trimmed.is_empty() {
+                         for t_idx in token_range.0..token_range.1 {
+                            if let Some(t) = tokens.get(t_idx) {
+                                if t.lexeme() == trimmed || t.lexeme().trim_matches('"') == trimmed {
+                                    style = style.bg(highlight_colors[t_idx % highlight_colors.len()]).fg(Color::White).bold();
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    if style.bg.is_none() {
+                        if part.contains(':') { style = style.fg(Color::Yellow); }
+                        else if part.contains('"') || part.contains('\'') { style = style.fg(Color::Cyan); }
+                        else if part.chars().any(|c| c.is_numeric()) { style = style.fg(Color::Green); }
+                    }
+                    spans.push(Span::styled(part.to_string(), style));
+                }
+                lines.push(Line::from(spans));
+            }
+            lines
+        } else {
+            vec![Line::from("No data")]
+        }
+    } else {
+        vec![Line::from("Select a node")]
+    };
+
+    let detail_len = detail_lines.len();
+    let detail_view = Paragraph::new(detail_lines)
+        .block(Block::default()
+            .title(format!(" AST Detail{} ", if app.focused_pane == 2 { " (Focused)" } else { "" }))
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(if app.focused_pane == 2 { phase_color } else { Color::DarkGray })))
+        .scroll((app.detail_scroll, 0));
+    f.render_widget(detail_view, h_layout[2]);
+
+    // AST Detail Scrollbar
+    f.render_stateful_widget(
+        Scrollbar::default()
+            .orientation(ScrollbarOrientation::VerticalRight)
+            .begin_symbol(Some("↑"))
+            .end_symbol(Some("↓")),
+        h_layout[2],
+        &mut ScrollbarState::new(detail_len).position(app.detail_scroll as usize),
+    );
 
     // 3. Source Code View
     let mut code_lines = Vec::new();
@@ -273,11 +316,22 @@ pub fn render(f: &mut Frame, app: &mut InspectorApp) {
         global_offset += segment_len;
     }
 
-    app.last_code_rect = h_layout[2];
+    app.last_code_rect = h_layout[3];
+    let code_len = code_lines.len();
     let code_view = Paragraph::new(code_lines)
         .block(Block::default().title(" Source Code ").borders(Borders::ALL).border_style(Style::default().fg(phase_color)))
         .scroll((app.code_scroll, 0));
-    f.render_widget(code_view, h_layout[2]);
+    f.render_widget(code_view, h_layout[3]);
+
+    // Source Code Scrollbar
+    f.render_stateful_widget(
+        Scrollbar::default()
+            .orientation(ScrollbarOrientation::VerticalRight)
+            .begin_symbol(Some("↑"))
+            .end_symbol(Some("↓")),
+        h_layout[3],
+        &mut ScrollbarState::new(code_len).position(app.code_scroll as usize),
+    );
 
     // --- Bottom Layout (State | Diagnostics) ---
     let bottom_layout = Layout::default()
