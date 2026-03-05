@@ -37,7 +37,7 @@ cargo run --features performance-stats -p vex-cli -- path/to/your_file.vx --stat
 
 The Inspector is a powerful tool to see how the compiler works. You must use the `inspector` feature for it to work.
 
-### 🖥️ GUI Inspector (Recommended)
+### GUI Inspector (Recommended)
 
 Our new graphical inspector provides a side-by-side view of Lexer tokens, PreParser results, AST nodes, and Source code highlighting.
 
@@ -54,7 +54,7 @@ cargo run --features inspector -p vex-cli -- path/to/your_file.vx --inspect --gu
 - **Cross-Highlighting:** Clicking a token highlights it in all other lists and the source code.
 - **Automatic Sync:** AST selection automatically scrolls and highlights related tokens.
 
-### ⌨️ TUI Inspector (Terminal)
+### TUI Inspector (Terminal)
 
 If you prefer the terminal, you can use the classic TUI inspector:
 
@@ -65,9 +65,9 @@ cargo run --features inspector -p vex-cli -- --inspect path/to/your_file.vx
 #### Inspector Shortcuts:
 
 - **SPACE**: Move to the next step.
-- **⏭ Skip Phase**: Fast-forward to the next compiler phase.
-- **🔄 Reload (R)**: Reload the source file and restart inspection.
-- **🎯 Focus (F)**: Re-center the view on the current selection.
+- **Skip Phase**: Fast-forward to the next compiler phase.
+- **Reload (R)**: Reload the source file and restart inspection.
+- **Focus (F)**: Re-center the view on the current selection.
 - **Q**: Quit the Inspector.
 
 ## Exporting Data
