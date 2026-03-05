@@ -1,6 +1,6 @@
 [package]
 name = "vex-inspector"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 
 [dependencies]
@@ -11,3 +11,6 @@ vex-lexer = { path = "../vex-lexer", features = ["inspector"] }
 vex-parser = { path = "../vex-parser", features = ["inspector"] }
 vex-diagnostic = { path = "../vex-diagnostic", features = ["inspector"] }
 serde_json = "1.0"
+
+[features]
+use-logos = ["vex-lexer/use-logos", "vex-parser/use-logos"]

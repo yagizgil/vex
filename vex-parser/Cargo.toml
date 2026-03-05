@@ -14,6 +14,7 @@ rustc-hash = "2.1.1"
 
 [features]
 inspector = ["vex-core/inspector", "vex-lexer/inspector", "vex-diagnostic/inspector", "dep:serde"]
+use-logos = ["vex-lexer/use-logos"]
 
 [dev-dependencies]
 insta = "1.46.3"

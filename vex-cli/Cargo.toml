@@ -1,6 +1,6 @@
 [package]
 name = "vex-cli"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 
 [dependencies]
@@ -19,3 +19,4 @@ clap = { version = "4.5.60", features = ["derive"] }
 [features]
 inspector = ["vex-inspector", "vex-core/inspector", "vex-lexer/inspector", "vex-parser/inspector", "vex-semantics/inspector", "vex-diagnostic/inspector"]
 performance-stats = ["dep:sysinfo"]
+use-logos = ["vex-lexer/use-logos", "vex-parser/use-logos", "vex-semantics/use-logos", "vex-inspector?/use-logos"]

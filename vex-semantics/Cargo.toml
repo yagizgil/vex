@@ -13,6 +13,7 @@ vex-parser = { path = "../vex-parser" }
 
 [features]
 inspector = ["vex-core/inspector", "vex-lexer/inspector", "vex-parser/inspector"]
+use-logos = ["vex-lexer/use-logos", "vex-parser/use-logos"]
 
 [dev-dependencies]
 insta = "1.46.3"
