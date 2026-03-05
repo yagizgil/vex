@@ -41,6 +41,8 @@ The Inspector is a powerful tool to see how the compiler works. You must use the
 
 Our new graphical inspector provides a side-by-side view of Lexer tokens, PreParser results, AST nodes, and Source code highlighting.
 
+![Vex GUI Inspector](vex-inspector/screenshot/gui1.png)
+
 **To open the GUI Inspector:**
 
 ```bash
