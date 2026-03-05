@@ -32,11 +32,7 @@ impl Cursor {
     /// Retrieves the nominal value at the current positional index without propagating the state.
     /// Yields '\0' to safely indicate operational exhaustion constraints.
     pub fn peek(&self) -> char {
-        if self.is_at_end() {
-            '\0'
-        } else {
-            self.source[self.pos]
-        }
+        self.peek_at(0)
     }
 
     /// Retrieves the nominal value natively localized at a +1 progression offset without propagation.
@@ -46,36 +42,25 @@ impl Cursor {
 
     /// Calculates sequence projections based on a parameterized absolute distance offset constraint.
     pub fn peek_at(&self, offset: usize) -> char {
-        if self.pos + offset >= self.source.len() {
-            '\0'
-        } else {
-            self.source[self.pos + offset]
-        }
+        self.source.get(self.pos + offset).copied().unwrap_or('\0')
     }
 
-    /// Yields the value localized at the current absolute offset constraint and mutates 
+    /// Yields the value localized at the current absolute offset constraint and mutates
     /// the relative coordinate metrics for downstream processing phases.
     pub fn advance(&mut self) -> char {
-        let ch = self.source[self.pos];
-        self.pos += 1; 
-        
-        if ch == '\n' {
-            self.line += 1;
-            self.col = 1; 
-        } else {
-            self.col += 1; 
-        }
+        let ch = self.peek();
+        self.pos += 1;
+
+        let is_nl = (ch == '\n') as usize;
+        self.line += is_nl;
+        self.col = (self.col * (1 - is_nl)) + 1;
+
         ch
     }
 
     /// Validates whether the sequentially targeted data correlates to the expected structural constraint.
     /// Conditionally executes an advance logic transition strictly upon successful resolution operations.
     pub fn match_char(&mut self, expected: char) -> bool {
-        if self.is_at_end() || self.source[self.pos] != expected {
-            false
-        } else {
-            self.advance();
-            true
-        }
+        (self.peek() == expected && !self.is_at_end()).then(|| self.advance()).is_some()
     }
 }

@@ -16,19 +16,31 @@ impl Parser {
         }
     }
 
+    pub fn peek_at(&self, offset: usize) -> &Token {
+        self.tokens
+            .get(self.idx + offset)
+            .unwrap_or_else(|| self.tokens.last().unwrap())
+    }
+
     pub fn peek(&self) -> &Token {
-        &self.tokens[self.idx.min(self.tokens.len() - 1)]
+        self.peek_at(0)
+    }
+
+    pub fn check(&self, token_type: TokenType) -> bool {
+        self.peek().kind == token_type
+    }
+
+    pub fn match_token(&mut self, token_type: TokenType) -> bool {
+        self.check(token_type).then(|| self.advance()).is_some()
     }
 
     pub fn advance(&mut self) -> Token {
-        let t = self.tokens[self.idx.min(self.tokens.len() - 1)].clone();
-        if self.idx < self.tokens.len() && !matches!(t.kind, TokenType::Eof) {
-            self.idx += 1;
-        }
+        let t = self.peek().clone();
+        self.idx += (t.kind != TokenType::Eof) as usize;
         t
     }
 
     pub fn is_at_end(&self) -> bool {
-        matches!(self.peek().kind, TokenType::Eof)
+        self.peek().kind == TokenType::Eof
     }
 }

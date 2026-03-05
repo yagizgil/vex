@@ -4,7 +4,6 @@ pub mod diagnostic;
 use std::sync::RwLock;
 use once_cell::sync::Lazy;
 use crate::diagnostic::{Diagnostic, DiagnosticLevel};
-use vex_core::span::Span;
 
 /// GLOBAL_DIAGNOSTICS is a global list of all errors and warnings found during compilation.
 /// We use RwLock so multiple threads can safely read or write to it.
