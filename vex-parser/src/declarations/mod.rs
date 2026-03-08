@@ -1,22 +1,22 @@
-pub mod vardecl;
-pub mod fndecl;
-pub mod enumdecl;
-pub mod structdecl;
-pub mod impldecl;
-pub mod macrodecl;
 pub mod definedecl;
+pub mod enumdecl;
+pub mod fndecl;
+pub mod impldecl;
 pub mod importdecl;
+pub mod macrodecl;
+pub mod structdecl;
+pub mod vardecl;
 
-pub use vardecl::VarDecl;
 pub use crate::Parser;
-use vex_core::trace_fn;
-pub use fndecl::FnDecl;
-pub use enumdecl::EnumDecl;
-pub use structdecl::StructDecl;
-pub use impldecl::ImplDecl;
-pub use macrodecl::MacroDecl;
 pub use definedecl::DefineDecl;
+pub use enumdecl::EnumDecl;
+pub use fndecl::FnDecl;
+pub use impldecl::ImplDecl;
 pub use importdecl::ImportDecl;
+pub use macrodecl::MacroDecl;
+pub use structdecl::StructDecl;
+pub use vardecl::VarDecl;
+use vex_core::trace_fn;
 
 use vex_core::ast::Stmt;
 
@@ -24,7 +24,7 @@ use vex_core::ast::Stmt;
 #[cfg_attr(feature = "inspector", derive(serde::Serialize))]
 pub enum Declaration {
     Var(Stmt),
-    Fn(FnDecl),
+    Fn(Stmt),
     Struct(StructDecl),
     Enum(EnumDecl),
     Impl(ImplDecl),

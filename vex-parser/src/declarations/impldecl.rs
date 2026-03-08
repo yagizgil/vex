@@ -5,7 +5,7 @@ use crate::Parser;
 pub struct ImplDecl;
 
 impl ImplDecl {
-    pub fn parse(parser: &mut Parser) -> Option<Self> {
+    pub fn parse(_parser: &mut Parser) -> Option<Self> {
         None
     }
 }

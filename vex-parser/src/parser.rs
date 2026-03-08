@@ -23,24 +23,35 @@ impl Parser {
         }
     }
 
+    #[inline]
     pub fn peek_at(&self, offset: usize) -> &Token {
         self.tokens
             .get(self.idx + offset)
             .unwrap_or_else(|| self.tokens.last().unwrap())
     }
 
+    #[inline]
     pub fn peek(&self) -> &Token {
         self.peek_at(0)
     }
 
-    pub fn check(&self, token_type: TokenType) -> bool {
-        self.peek().kind == token_type
+    #[inline]
+    pub fn check(&self, kind: TokenType) -> bool {
+        self.peek().kind == kind
     }
 
-    pub fn match_token(&mut self, token_type: TokenType) -> bool {
-        self.check(token_type).then(|| self.advance()).is_some()
+    #[inline]
+    pub fn match_token(&mut self, kind: TokenType) -> bool {
+        // self.check(token_type).then(|| self.advance()).is_some()
+        if self.check(kind) {
+            self.advance();
+            true
+        } else {
+            false
+        }
     }
 
+    #[inline]
     pub fn advance(&mut self) -> Token {
         let t = self.peek().clone();
         if !self.is_at_end() {
@@ -56,10 +67,12 @@ impl Parser {
         self.peek().clone()
     }
 
+    #[inline]
     pub fn previous(&self) -> &Token {
         &self.tokens[self.idx.saturating_sub(1)]
     }
 
+    #[inline]
     pub fn is_at_end(&self) -> bool {
         self.peek().kind == TokenType::Eof
     }
@@ -128,11 +141,14 @@ impl Parser {
                     TokenType::Enum => EnumDecl::parse(self).map(Declaration::Enum),
                     TokenType::Impl => ImplDecl::parse(self).map(Declaration::Impl),
                     // If it's an identifier or a type keyword, it might be a VarDecl without 'var'
-                    TokenType::Identifier 
-                    | TokenType::TInt | TokenType::TStr | TokenType::TFloat | TokenType::TBool 
-                    | TokenType::TAny | TokenType::TList | TokenType::TDict => {
-                        VarDecl::parse(self).map(Declaration::Var)
-                    }
+                    TokenType::Identifier
+                    | TokenType::TInt
+                    | TokenType::TStr
+                    | TokenType::TFloat
+                    | TokenType::TBool
+                    | TokenType::TAny
+                    | TokenType::TList
+                    | TokenType::TDict => VarDecl::parse(self).map(Declaration::Var),
                     _ => None,
                 }
             }
@@ -187,10 +203,12 @@ impl Parser {
     }
 
     /// Same as match_token, but reads better in some contexts
+    #[inline]
     pub fn consume(&mut self, kind: TokenType) -> bool {
         self.match_token(kind)
     }
 
+    #[inline]
     pub fn is_next(&self, kind: TokenType) -> bool {
         self.peek_at(1).kind == kind
     }
@@ -286,7 +304,12 @@ impl Parser {
 
     /// Parses an expression with precedence (Pratt parsing)
     pub fn parse_expression(&mut self, precedence: u8) -> Option<Expr> {
-        trace_fn!("parse_expression", "prec={}, at={:?}", precedence, self.peek().lexeme());
+        trace_fn!(
+            "parse_expression",
+            "prec={}, at={:?}",
+            precedence,
+            self.peek().lexeme()
+        );
         let mut left = self.parse_prefix()?;
 
         while !self.is_at_end() && precedence < Self::get_precedence(&self.peek().kind) {
@@ -449,6 +472,9 @@ impl Parser {
             TokenType::Break => None,    // TODO: BreakStmt::parse(self)
             TokenType::Continue => None, // TODO: ContinueStmt::parse(self)
             TokenType::LeftBrace => Some(Stmt::Block(self.parse_block())),
+            TokenType::Continue => Some(Stmt::Continue {
+                keyword: self.advance(),
+            }),
             _ => {
                 // Default to expression statement
                 // Some(Stmt::Expression(self.parse_expression(0)?))
