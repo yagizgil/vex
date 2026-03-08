@@ -71,15 +71,13 @@ impl FnDecl {
         // 6. End of signature
         parser.match_token(TokenType::Colon);
 
+        parser.expect(TokenType::StatementEnd, "");
+
         // 7. Body
         let mut body = Vec::new();
         if parser.check(TokenType::Indent) {
             body = parser.parse_block();
-        } else {
-            // Handle single-line or empty body
-            while parser.match_token(TokenType::Newline)
-                || parser.match_token(TokenType::StatementEnd)
-            {}
+            parser.expect(TokenType::Dedent, "");
         }
 
         Some(Stmt::FnDecl {

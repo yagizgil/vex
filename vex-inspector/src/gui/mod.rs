@@ -1,5 +1,5 @@
 use crate::InspectorApp;
-use crate::InspectorPhase;
+
 use eframe::egui;
 use vex_core::smap;
 use vex_core::token::TokenType;
