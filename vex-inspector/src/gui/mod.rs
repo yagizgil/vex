@@ -482,8 +482,8 @@ impl eframe::App for GuiInspector {
                     ui.heading("Step Trace (Call Stack)");
                     ui.separator();
                     egui::ScrollArea::vertical().show(ui, |ui| {
-                        for node in &self.app.last_step_traces {
-                            render_trace_node(ui, node);
+                        for (idx, node) in self.app.last_step_traces.iter().enumerate() {
+                            render_trace_node(ui, node, idx);
                         }
                     });
                 });
@@ -536,8 +536,8 @@ impl eframe::App for GuiInspector {
                         ui.heading("Execution Trace");
                         ui.separator();
                         egui::ScrollArea::vertical().show(ui, |ui| {
-                            for node in &self.app.last_step_traces {
-                                render_trace_node(ui, node);
+                            for (idx, node) in self.app.last_step_traces.iter().enumerate() {
+                                render_trace_node(ui, node, idx);
                             }
                         });
                     });
@@ -582,24 +582,29 @@ impl eframe::App for GuiInspector {
 
 // HELPERS
 
-fn render_trace_node(ui: &mut egui::Ui, node: &TraceNode) {
+fn render_trace_node(ui: &mut egui::Ui, node: &TraceNode, idx: usize) {
     let label = if let Some(args) = &node.args {
         format!("{} ({})", node.name, args)
     } else {
         node.name.clone()
     };
 
-    if node.children.is_empty() {
-        ui.label(egui::RichText::new(format!("○ {}", label)).color(egui::Color32::from_gray(180)));
-    } else {
-        egui::CollapsingHeader::new(egui::RichText::new(format!("▼ {}", label)).strong())
-            .default_open(true)
-            .show(ui, |ui| {
-                for child in &node.children {
-                    render_trace_node(ui, child);
-                }
-            });
-    }
+    // Use a multi-part ID source to prevent clashes across depth levels and siblings
+    ui.push_id((idx, &node.name, node.depth), |ui| {
+        if node.children.is_empty() {
+            ui.label(
+                egui::RichText::new(format!("○ {}", label)).color(egui::Color32::from_gray(180)),
+            );
+        } else {
+            egui::CollapsingHeader::new(egui::RichText::new(format!("▼ {}", label)).strong())
+                .default_open(true)
+                .show(ui, |ui| {
+                    for (i, child) in node.children.iter().enumerate() {
+                        render_trace_node(ui, child, i);
+                    }
+                });
+        }
+    });
 }
 
 fn render_ast_list(
