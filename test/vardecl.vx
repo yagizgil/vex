@@ -17,3 +17,12 @@ var assg mil
 var assg2.float mil
 
 pub var int assg3 lenght
+
+var int assg4 mil
+var assg5 mil-lenght
+
+var assg6.int assg5
+var assg7.float assg5
+
+pub var int assg8.int assg5
+pub var float assg9.float assg5

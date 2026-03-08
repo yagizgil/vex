@@ -1,0 +1,12 @@
+
+pub fn test id.int name.str - float:
+    continue
+
+fn test2 id name:
+    continue
+
+fn test3 id.int name - str:
+    continue
+
+priv fn test4:
+    continue
