@@ -100,7 +100,10 @@ impl Parser {
                 if self.idx > prev_idx {
                     return None; // Stop for inspector
                 }
-                self.advance();
+
+                if !self.is_at_end() {
+                    self.advance();
+                }
                 return None; // Stop at each step
             }
         }
@@ -302,7 +305,6 @@ impl Parser {
         None
     }
 
-    /// Parses an expression with precedence (Pratt parsing)
     pub fn parse_expression(&mut self, precedence: u8) -> Option<Expr> {
         trace_fn!(
             "parse_expression",
@@ -313,7 +315,16 @@ impl Parser {
         let mut left = self.parse_prefix()?;
 
         while !self.is_at_end() && precedence < Self::get_precedence(&self.peek().kind) {
-            left = self.parse_infix(left)?;
+            let prev_idx = self.idx;
+            if let Some(new_left) = self.parse_infix(left.clone()) {
+                left = new_left;
+                // Safety: If we didn't advance, something is wrong with the precedence rules
+                if self.idx <= prev_idx {
+                    break;
+                }
+            } else {
+                break;
+            }
         }
 
         Some(left)
@@ -402,6 +413,48 @@ impl Parser {
                 })
             }
 
+            TokenType::Dot => {
+                self.advance();
+                let name =
+                    self.expect(TokenType::Identifier, "Expected property name after '.'")?;
+                Some(Expr::Get {
+                    object: Box::new(left),
+                    name,
+                    is_safe: false,
+                })
+            }
+
+            TokenType::LeftBracket => {
+                let opening = self.advance();
+                let index = self.parse_expression(0)?;
+                let closing = self.expect(TokenType::RightBracket, "Expected ']' after index")?;
+                Some(Expr::Index {
+                    object: Box::new(left),
+                    index: Box::new(index),
+                    closing_bracket: closing,
+                    is_safe: false,
+                })
+            }
+
+            TokenType::LeftParen => {
+                self.advance();
+                let mut arguments = Vec::new();
+                if !self.check(TokenType::RightParen) {
+                    loop {
+                        arguments.push(self.parse_expression(0)?);
+                        if !self.match_token(TokenType::Comma) {
+                            break;
+                        }
+                    }
+                }
+                let closing = self.expect(TokenType::RightParen, "Expected ')' after arguments")?;
+                Some(Expr::Call {
+                    callee: Box::new(left),
+                    arguments,
+                    closing_paren: closing,
+                })
+            }
+
             // Vex Function Call (No parentheses)
             _ if Self::has_prefix_rule(&token.kind) => {
                 let mut arguments = Vec::new();
@@ -415,12 +468,18 @@ impl Parser {
                 {
                     // Use a precedence high enough to not gobble following operators
                     // that might belong to a surrounding expression
-                    if let Some(arg) = self.parse_expression(Self::PREC_CALL) {
+                    if let Some(arg) = self.parse_expression(9) {
+                        // PREC_CALL
                         arguments.push(arg);
                     } else {
                         break;
                     }
                 }
+
+                if arguments.is_empty() {
+                    return None;
+                }
+
                 Some(Expr::Call {
                     callee: Box::new(left),
                     arguments,
@@ -428,8 +487,7 @@ impl Parser {
                 })
             }
 
-            // Dot access, Indexing etc. will go here
-            _ => Some(left),
+            _ => None,
         }
     }
 
@@ -453,9 +511,7 @@ impl Parser {
         )
     }
 
-    /// Parses a general statement (if, while, for, expr stmt, etc.)
     pub fn parse_statement(&mut self) -> Option<Stmt> {
-        trace_fn!("parse_statement", "at={:?}", self.peek().lexeme());
         // Skip leading whitespace-like tokens
         while self.match_token(TokenType::Newline) || self.match_token(TokenType::StatementEnd) {}
 
@@ -463,23 +519,37 @@ impl Parser {
             return None;
         }
 
+        trace_fn!("parse_statement", "at={:?}", self.peek().lexeme());
+
         match self.peek().kind {
-            TokenType::If => None,       // TODO: IfStmt::parse(self)
-            TokenType::While => None,    // TODO: WhileStmt::parse(self)
-            TokenType::For => None,      // TODO: ForStmt::parse(self)
-            TokenType::Match => None,    // TODO: MatchStmt::parse(self)
-            TokenType::Return => None,   // TODO: ReturnStmt::parse(self)
-            TokenType::Break => None,    // TODO: BreakStmt::parse(self)
-            TokenType::Continue => None, // TODO: ContinueStmt::parse(self)
-            TokenType::LeftBrace => Some(Stmt::Block(self.parse_block())),
+            TokenType::Var
+            | TokenType::Const
+            | TokenType::Pub
+            | TokenType::Priv
+            | TokenType::Static
+            | TokenType::Async => {
+                // Local variable declaration
+                VarDecl::parse(self)
+            }
+            TokenType::If => None,     // TODO: IfStmt::parse(self)
+            TokenType::While => None,  // TODO: WhileStmt::parse(self)
+            TokenType::For => None,    // TODO: ForStmt::parse(self)
+            TokenType::Match => None,  // TODO: MatchStmt::parse(self)
+            TokenType::Return => None, // TODO: ReturnStmt::parse(self)
+            TokenType::Break => None,  // TODO: BreakStmt::parse(self)
             TokenType::Continue => Some(Stmt::Continue {
                 keyword: self.advance(),
             }),
-            _ => {
+            TokenType::LeftBrace => Some(Stmt::Block(self.parse_block())),
+            TokenType::Identifier | TokenType::NumberLiteral(_) | TokenType::StringLiteral(_) => {
                 // Default to expression statement
-                // Some(Stmt::Expression(self.parse_expression(0)?))
-                None
+                if let Some(expr) = self.parse_expression(0) {
+                    Some(Stmt::Expression(expr))
+                } else {
+                    None
+                }
             }
+            _ => None,
         }
     }
 

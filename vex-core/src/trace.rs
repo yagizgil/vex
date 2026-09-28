@@ -52,9 +52,7 @@ pub fn exit_trace(result: Option<String>) {
 
 #[cfg(feature = "inspector")]
 pub fn take_traces() -> Vec<TraceNode> {
-    COMPLETED_TRACES.with(|completed| {
-        completed.borrow_mut().drain(..).collect()
-    })
+    COMPLETED_TRACES.with(|completed| completed.borrow_mut().drain(..).collect())
 }
 
 #[cfg(not(feature = "inspector"))]
@@ -70,6 +68,7 @@ macro_rules! trace_fn {
             $crate::trace::enter_trace($name, None);
             Some($crate::trace::TraceGuard)
         };
+        println!($name);
         #[cfg(not(feature = "inspector"))]
         let _trace_guard: Option<()> = None;
     };
@@ -79,6 +78,7 @@ macro_rules! trace_fn {
             $crate::trace::enter_trace($name, Some(format!($($arg)*)));
             Some($crate::trace::TraceGuard)
         };
+        println!($name);
         #[cfg(not(feature = "inspector"))]
         let _trace_guard: Option<()> = None;
     };

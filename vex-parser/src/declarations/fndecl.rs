@@ -9,7 +9,8 @@ pub struct FnDecl;
 
 impl FnDecl {
     pub fn parse(parser: &mut Parser) -> Option<Stmt> {
-        trace_fn!("FnDecl::parse", "at={:?}", parser.peek().lexeme());
+        let _sfn = parser.peek().lexeme();
+        trace_fn!("FnDecl::parse", "at={:?}", _sfn);
         let mut modifiers = Vec::new();
         let mut is_async = false;
 
@@ -76,6 +77,7 @@ impl FnDecl {
         // 7. Body
         let mut body = Vec::new();
         if parser.check(TokenType::Indent) {
+            trace_fn!("FnDecl::parse fn indent start", "at={:?}", _sfn);
             body = parser.parse_block();
             parser.expect(TokenType::Dedent, "");
         }
